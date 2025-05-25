@@ -1,4 +1,5 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from bson import ObjectId
 from typing import List, Optional
 
 class UserBase(BaseModel):
@@ -8,9 +9,7 @@ class UserBase(BaseModel):
     contacts: Optional[dict] = None
     skills: Optional[List[str]] = None
 
-    class Config:
-        exclude_none = True
-        allow_population_by_field_name = True 
+    model_config = ConfigDict(populate_by_name=True)
 
 class UserCreate(UserBase):
     pass
@@ -24,3 +23,11 @@ class UserUpdate(BaseModel):
 
 class UserFromDB(UserBase):
     id: str = Field(..., alias='_id')
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    @field_validator('id', mode='before')
+    def convert_objectid(cls, v):
+        if isinstance(v, ObjectId):
+            return str(v)
+        return v
