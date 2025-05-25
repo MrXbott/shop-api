@@ -3,7 +3,7 @@ from bson.errors import InvalidId
 
 from app.api.v1 import users
 from app.exceptions.exc import invalid_id_exception_handler, http_exception_handler
-from app.middleware import LoggingMiddleware
+from app.middleware.logging import LoggingMiddleware
 
 app = FastAPI()
 
