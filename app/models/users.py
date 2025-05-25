@@ -1,6 +1,7 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
-from bson import ObjectId
+from pydantic import BaseModel, ConfigDict, EmailStr 
 from typing import List, Optional
+
+from app.models.common import CommonBaseModel
 
 class UserBase(BaseModel):
     name: str
@@ -21,13 +22,5 @@ class UserUpdate(BaseModel):
     contacts: Optional[dict] = None
     skills: Optional[List[str]] = None
 
-class UserFromDB(UserBase):
-    id: str = Field(..., alias='_id')
-
-    model_config = ConfigDict(populate_by_name=True)
-
-    @field_validator('id', mode='before')
-    def convert_objectid(cls, v):
-        if isinstance(v, ObjectId):
-            return str(v)
-        return v
+class UserFromDB(UserBase, CommonBaseModel):
+    pass
