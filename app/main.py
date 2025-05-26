@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from bson.errors import InvalidId
 
-from app.api.v1 import users
+from app.api.v1 import users, products
 from app.exceptions.exc import invalid_id_exception_handler, http_exception_handler
 from app.middleware.logging import LoggingMiddleware
 
@@ -13,5 +13,6 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_middleware(LoggingMiddleware)
 
 app.include_router(users.router, prefix='/api/v1')
+app.include_router(products.router, prefix='/api/v1')
 
 

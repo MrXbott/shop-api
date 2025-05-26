@@ -16,7 +16,7 @@ class ProductBase(BaseModel):
     manufacturer: str
     rating: Optional[float] = None
     stock: int
-    tags: Optional[List[str]] = None
+    tags: Optional[List[str]] = []
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -35,7 +35,7 @@ class ProductUpdate(BaseModel):
     manufacturer: Optional[str] = None
     rating: Optional[float] = None
     stock: Optional[int] = None
-    tags: Optional[List[str]] = None
+    tags: Optional[List[str]] = []
 
     @field_validator('rating')
     def validate_rating(cls, v): 
