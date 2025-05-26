@@ -13,7 +13,7 @@ async def create_user(user: UserCreate):
     new_user = await db.users.find_one({'_id': result.inserted_id})
     if not new_user:
         raise HTTPException(500, 'Failed to fetch inserted user')
-    return UserFromDB(**new_user)
+    return new_user
 
 @router.get('/', response_model=List[UserFromDB], response_model_by_alias=False)
 async def get_all_users():
@@ -31,20 +31,26 @@ async def get_user_by_id(id: str):
     return user
 
 @router.put('/{id}', response_model=UserFromDB, response_model_by_alias=False)
-async def replace_user_full(id: str, user: UserCreate):
-    result = await db.users.replace_one({'_id': ObjectId(id)}, user.model_dump())
+async def update_user_full(id: str, user: UserCreate):
+    obj_id = ObjectId(id)
+    result = await db.users.replace_one({'_id': obj_id}, user.model_dump())
     if result.matched_count == 0:
         raise HTTPException(404, detail='User not found')
-    return {**user.model_dump(), '_id': id}
+    updated_user = await db.users.find_one({'_id': obj_id})
+    if not updated_user:
+        raise HTTPException(500, detail='Failed to fetch updated user')
+    return updated_user
 
 @router.patch('/{id}', response_model=UserFromDB, response_model_by_alias=False)
 async def update_user_partial(id: str, user: UserUpdate):
     obj_id = ObjectId(id)
-    update_data = {k: v for k, v in user.model_dump().items() if v is not None}
+    update_data = {k: v for k, v in user.model_dump().items() if v not in (None, [], {})}
     result = await db.users.update_one({'_id': obj_id}, {'$set': update_data})
     if result.matched_count == 0:
         raise HTTPException(404, detail='User not found')
     updated_user = await db.users.find_one({'_id': obj_id})
+    if not updated_user:
+        raise HTTPException(500, detail='Failed to fetch updated user')
     return updated_user
 
 @router.delete('/{id}')
