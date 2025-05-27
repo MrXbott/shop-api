@@ -3,7 +3,7 @@ from bson import ObjectId
 from typing import List
 
 from app.db.database import db
-from app.models.products import ProductCreate, ProductUpdate, ProductFromDB
+from app.schemas.products import ProductCreate, ProductUpdate, ProductFromDB
 
 router = APIRouter(prefix='/products')
 

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict, EmailStr 
 from typing import List, Optional
 
-from app.models.common import CommonBaseModel
+from app.schemas.common import CommonBaseModel
 
 class UserBase(BaseModel):
     name: str

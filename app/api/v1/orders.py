@@ -4,7 +4,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from app.db.database import db
-from app.models.orders import OrderCreate, OrderFromDB, OrderItem, OrderStatus, StatusUpdate
+from app.schemas.orders import OrderCreate, OrderFromDB, OrderItem, OrderStatus, StatusUpdate
 
 router = APIRouter(prefix='/orders')
 

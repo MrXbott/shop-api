@@ -3,7 +3,7 @@ from bson import ObjectId
 from typing import List
 
 from app.db.database import db
-from app.models.users import UserCreate, UserFromDB, UserUpdate
+from app.schemas.users import UserCreate, UserFromDB, UserUpdate
 
 router = APIRouter(prefix='/users')
 
