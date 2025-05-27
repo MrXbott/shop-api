@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator
 from bson import ObjectId
 from typing import Optional
 
-class CommonBaseModel(BaseModel):
+class CommonBaseModel:
     id: Optional[str] = Field(default=None, alias= '_id')
 
     model_config = ConfigDict(
