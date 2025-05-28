@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
 
-from app.db.database import db
 from app.schemas.users import UserCreate, UserFromDB, UserUpdate
 from app.db.crud import users as crud
 
@@ -12,7 +11,7 @@ async def create_user(user: UserCreate):
     if not result.inserted_id:
         raise HTTPException(500, 'Failed to insert new user')
     
-    new_user = await db.users.find_one({'_id': result.inserted_id})
+    new_user = await crud.get_user_by_id(result.inserted_id)
     if not new_user:
         raise HTTPException(500, 'Failed to fetch inserted user')
     return UserFromDB(**new_user)
