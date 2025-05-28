@@ -3,8 +3,7 @@ from bson import ObjectId
 from typing import List, Optional
 from datetime import datetime
 
-from app.db.database import db
-from app.db.crud import orders as crud
+from app.db.crud.orders import Order
 from app.schemas.orders import OrderCreate, OrderFromDB, OrderItem, OrderStatus, StatusUpdate
 
 router = APIRouter(prefix='/orders')
@@ -31,11 +30,11 @@ async def create_order(order: OrderCreate):
     order_data['status'] = OrderStatus.CREATED
     order_data['created_at'] = datetime.now()
     
-    result = await crud.create_new_order(order_data)
+    result = await Order.create(order_data)
     if not result.inserted_id:
         raise HTTPException(500, 'Failed to insert new order')
     
-    new_order = await crud.get_order_by_id(result.inserted_id)
+    new_order = await Order.get_by_id(result.inserted_id)
     if not new_order:
         raise HTTPException(500, 'Failed to fetch inserted order')
     return new_order
@@ -53,17 +52,17 @@ async def get_orders(
             query['user_id'] = user_id
     if status:
         query['status'] = status.value
-    orders = await crud.get_orders(query, limit, skip)
+    orders = await Order.get(query, limit, skip)
     return orders
 
 @router.get('/count')
 async def get_orders_count():
-    count = await crud.get_orders_count()
+    count = await Order.get_count()
     return {'orders_count': count}
 
 @router.get('/{id}', response_model=OrderFromDB, response_model_by_alias=False)
 async def get_order_by_id(id: str):
-    order = await crud.get_order_by_id(id)
+    order = await Order.get_by_id(id)
     if not order:
         raise HTTPException(404, 'Order not found')
     return order
@@ -71,25 +70,25 @@ async def get_order_by_id(id: str):
 @router.patch('/{id}/status', response_model=OrderFromDB, response_model_by_alias=False)
 async def update_order_status(id: str, status_body: StatusUpdate):
     new_status = status_body.status
-    order = await crud.get_order_by_id(id)
+    order = await Order.get_by_id(id)
     if not order:
         raise HTTPException(404, 'Order not found')
     current_status = order['status']
     if not is_valid_status_transition(current_status, new_status):
         raise HTTPException(400, f'Invalid status transition: {current_status} → {new_status}')
     
-    result = await crud.update_order_status(id, new_status)
+    result = await Order.update_status(id, new_status)
     if result.matched_count == 0:
         raise HTTPException(404, 'Order not found')
     
-    updated_order = await crud.get_order_by_id(id)
+    updated_order = await Order.get_by_id(id)
     if not updated_order:
         raise HTTPException(500, 'Failed to fetch updated order')
     return updated_order
 
 @router.delete('/{id}')
 async def delete_order_by_id(id: str):
-    result = await crud.delete_order_by_id(id)
+    result = await Order.delete_by_id(id)
     if result.deleted_count == 0:
         raise HTTPException(404, detail='Order not found')
     return {'message': 'Order deleted'}
