@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict, field_validator
 from typing import List, Optional
 
-from app.models.common import CommonBaseModel
+from app.schemas.common import CommonBaseModel
 
 def rating_in_range(v):
     if v is not None and not (0.0 <= v <= 5.0):

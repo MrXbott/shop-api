@@ -3,7 +3,7 @@ from typing import List, Optional
 from datetime import datetime
 from enum import Enum
 
-from app.models.common import CommonBaseModel
+from app.schemas.common import CommonBaseModel
 
 class OrderStatus(str, Enum):
     CREATED = 'created'
