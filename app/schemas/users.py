@@ -5,7 +5,7 @@ from app.schemas.common import CommonBaseModel
 
 class UserBase(BaseModel):
     name: str
-    email: Optional[EmailStr] = None
+    email: EmailStr
     interests: Optional[List[str]] = []
     contacts: Optional[dict] = {}
     skills: Optional[List[str]] = []
