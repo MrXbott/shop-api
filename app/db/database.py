@@ -1,15 +1,23 @@
-from pymongo import AsyncMongoClient
+from pymongo import AsyncMongoClient, ASCENDING
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
 MONGO_URI = os.getenv('MONGO_URI')
+MONGO_DB = os.getenv('MONGO_DB')
+
 client = AsyncMongoClient(MONGO_URI)
 
 try:
-    db = client.get_database('userprofiles')
+    db = client.get_database(MONGO_DB)
+    users_collection = db.get_collection('users')
 except Exception as e:
-    raise Exception('Unable to get db: ', e)
+    raise Exception('Unable to get db or collection: ', e)
 
 
+async def setup_indexes():
+    try:
+        await users_collection.create_index([('email', ASCENDING)], unique=True)
+    except Exception as e:
+        raise Exception('Error creating index:', e)
