@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
 from app.api.v1 import users, products, orders
-from app.exceptions.exc import register_exception_handlers
+from app.exceptions.handlers import register_exception_handlers
 from app.middleware.logging import LoggingMiddleware
 from app.db.database import setup_indexes
 

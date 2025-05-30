@@ -5,7 +5,7 @@ from pymongo.results import UpdateResult
 
 from app.db.crud.base import BaseCRUD
 
-class Order(BaseCRUD):
+class OrderCRUD(BaseCRUD):
     collection = db.get_collection('orders')
     
     @classmethod

@@ -16,3 +16,7 @@ class CommonBaseModel:
         if isinstance(v, ObjectId):
             return str(v)
         return v
+
+class BaseQueryParams(BaseModel):
+    limit: int = Field(default=100, ge=1, le=100)
+    skip: int = Field(default=0, ge=0)

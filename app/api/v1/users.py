@@ -1,67 +1,35 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends, status
 
-from app.schemas.users import UserCreate, UserFromDB, UserUpdate
-from app.db.crud.users import User
+from app.schemas.users import UserCreate, UserFromDB, UserUpdate, UserQueryParams
+from app.services.users import User
 
 router = APIRouter(prefix='/users')
 
-@router.post('/', response_model=UserFromDB, response_model_by_alias=False)
+@router.post('/', response_model=UserFromDB, response_model_by_alias=False, status_code=status.HTTP_200_OK)
 async def create_user(user: UserCreate):
-    result = await User.create(user.model_dump())
-    if not result.inserted_id:
-        raise HTTPException(500, 'Failed to insert new user')
-    
-    new_user = await User.get_by_id(result.inserted_id)
-    if not new_user:
-        raise HTTPException(500, 'Failed to fetch inserted user')
-    return UserFromDB(**new_user)
+    return await User.create(user)
 
-@router.get('/', response_model=list[UserFromDB], response_model_by_alias=False)
-async def get_users(
-                limit: int = Query(100, ge=1, le=100),
-                skip: int = Query(0, ge=0)
-            ):
-    result = await User.get({}, limit, skip)
-    return [UserFromDB(**user) for user in result]
+@router.get('/', response_model=list[UserFromDB], response_model_by_alias=False, status_code=status.HTTP_200_OK)
+async def get_users(params: UserQueryParams = Depends()):
+    return await User.get_users(params)
 
-@router.get('/count')
+@router.get('/count', status_code=status.HTTP_200_OK)
 async def get_users_count():
-    count = await User.get_count()
-    return {'users_count': count}
+    return {'users_count': await User.count()}
 
-@router.get('/{id}', response_model=UserFromDB, response_model_by_alias=False)
-async def get_user_by_id(id: str):
-    user = await User.get_by_id(id)
-    if not user:
-        raise HTTPException(404, 'User not found')
-    return UserFromDB(**user)
+@router.get('/{user_id}', response_model=UserFromDB, response_model_by_alias=False, status_code=status.HTTP_200_OK)
+async def get_user_by_id(user_id: str):
+    return await User.get_by_id(user_id)
 
-@router.put('/{id}', response_model=UserFromDB, response_model_by_alias=False)
-async def update_user_full(id: str, user: UserCreate):
-    result = await User.update_full(id, user.model_dump())
-    if result.matched_count == 0:
-        raise HTTPException(404, detail='User not found')
-    
-    updated_user = await User.get_by_id(id)
-    if not updated_user:
-        raise HTTPException(500, detail='Failed to fetch updated user')
-    return UserFromDB(**updated_user)
+@router.put('/{user_id}', response_model=UserFromDB, response_model_by_alias=False, status_code=status.HTTP_200_OK)
+async def update_user_full(user_id: str, user_data: UserCreate):
+    return await User.update_full(user_id, user_data)
 
-@router.patch('/{id}', response_model=UserFromDB, response_model_by_alias=False)
-async def update_user_partial(id: str, user: UserUpdate):
-    update_data = {k: v for k, v in user.model_dump().items() if v not in (None, [], {})}
-    result = await User.update_partial(id, update_data)
-    if result.matched_count == 0:
-        raise HTTPException(404, detail='User not found')
-    
-    updated_user = await User.get_by_id(id)
-    if not updated_user:
-        raise HTTPException(500, detail='Failed to fetch updated user')
-    return UserFromDB(**updated_user)
+@router.patch('/{user_id}', response_model=UserFromDB, response_model_by_alias=False, status_code=status.HTTP_200_OK)
+async def update_user_partial(user_id: str, user_data: UserUpdate):
+    return await User.update_partial(user_id, user_data)
 
-@router.delete('/{id}')
-async def delete_user_by_id(id: str):
-    result = await User.delete_by_id(id)
-    if result.deleted_count == 0:
-        raise HTTPException(404, detail='User not found')
+@router.delete('/{user_id}', status_code=status.HTTP_200_OK)
+async def delete_user_by_id(user_id: str):
+    await User.delete(user_id)
     return {'message': 'User deleted'}

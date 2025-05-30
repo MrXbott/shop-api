@@ -1,7 +1,7 @@
-from pydantic import BaseModel, ConfigDict, EmailStr 
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from typing import List, Optional
 
-from app.schemas.common import CommonBaseModel
+from app.schemas.common import CommonBaseModel, BaseQueryParams
 
 class UserBase(BaseModel):
     name: str
@@ -23,4 +23,7 @@ class UserUpdate(BaseModel):
     skills: Optional[List[str]] = []
 
 class UserFromDB(UserBase, CommonBaseModel):
+    pass
+
+class UserQueryParams(BaseQueryParams):
     pass
