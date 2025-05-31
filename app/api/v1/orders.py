@@ -1,17 +1,17 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 
-from app.schemas.orders import OrderCreate, OrderFromDB, OrderQueryParams, StatusUpdate
+from app.schemas.orders import OrderBase, OrderFromDB, OrderQueryParams, StatusUpdate
 from app.services.orders import Order
 
 router = APIRouter(prefix='/orders')
 
 @router.post('/', response_model=OrderFromDB, response_model_by_alias=False, status_code=status.HTTP_201_CREATED)
-async def create_order(order: OrderCreate):
+async def create_order(order: OrderBase):
     return await Order.create(order)
 
 @router.get('/', response_model=list[OrderFromDB], response_model_by_alias=False, status_code=status.HTTP_200_OK)
 async def get_orders(params: OrderQueryParams = Depends()):
-    return await Order.get_orders(params)
+    return await Order.get_by_params(params)
 
 @router.get('/count', status_code=status.HTTP_200_OK)
 async def get_orders_count():    

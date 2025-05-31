@@ -5,7 +5,17 @@ from enum import Enum
 
 from app.schemas.common import CommonBaseModel, BaseQueryParams
 
-class OrderStatus(str, Enum):
+class CaseInsensitiveEnum(str, Enum):
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            value_lower = value.lower()
+            for member in cls:
+                if member.value == value_lower:
+                    return member
+        return None
+    
+class OrderStatus(CaseInsensitiveEnum):
     CREATED = 'created'
     WAITING_FOR_PAYMENT = 'waiting_for_payment'
     PAID = 'paid'
@@ -27,11 +37,19 @@ class OrderBase(BaseModel):
     items: List[OrderItem]
 
 class OrderCreate(OrderBase):
+    status: OrderStatus
+    created_at: datetime
+    total_price: float
+    updated_at: Optional[datetime] = None
+    
     @field_validator('items')
     def items_must_not_be_empty(cls, v):
         if not v:
             raise ValueError('Order must contain at least one item')
         return v
+
+class OrderUpdate(BaseModel):
+    pass
 
 class OrderFromDB(OrderBase, CommonBaseModel):
     status: OrderStatus
@@ -42,6 +60,7 @@ class OrderFromDB(OrderBase, CommonBaseModel):
 class OrderQueryParams(BaseQueryParams):
     user_id: Optional[str] = Field(default=None)
     status: Optional[OrderStatus] = Field(default=None)
+
 
     
     

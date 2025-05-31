@@ -11,7 +11,7 @@ async def create_product(product: ProductCreate):
 
 @router.get('/', response_model=list[ProductFromDB], response_model_by_alias=False, status_code=status.HTTP_200_OK)
 async def get_products(params: ProductQueryParams = Depends()):
-    return await Product.get_products(params)
+    return await Product.get_by_params(params)
 
 @router.get('/count', status_code=status.HTTP_200_OK)
 async def get_products_count():
@@ -29,7 +29,7 @@ async def update_product_full(product_id: str, product_data: ProductCreate):
 async def update_product_partial(product_id: str, product_data: ProductUpdate):
     return await Product.update_partial(product_id, product_data)
 
-@router.delete('/{product_id}')
-async def delete_product_by_id(product_id: str, status_code=status.HTTP_200_OK):
+@router.delete('/{product_id}', status_code=status.HTTP_200_OK)
+async def delete_product_by_id(product_id: str):
     await Product.delete(product_id)
     return {'message': 'Product deleted'}

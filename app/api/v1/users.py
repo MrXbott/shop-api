@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status
 
 from app.schemas.users import UserCreate, UserFromDB, UserUpdate, UserQueryParams
 from app.services.users import User
@@ -11,7 +11,7 @@ async def create_user(user: UserCreate):
 
 @router.get('/', response_model=list[UserFromDB], response_model_by_alias=False, status_code=status.HTTP_200_OK)
 async def get_users(params: UserQueryParams = Depends()):
-    return await User.get_users(params)
+    return await User.get_by_params(params)
 
 @router.get('/count', status_code=status.HTTP_200_OK)
 async def get_users_count():
