@@ -73,7 +73,7 @@ class BaseService(ABC, Generic[CreateObjSchema, ReturnObjSchema, UpdateObjSchema
         if result.matched_count == 0:
             raise HTTPException(404, detail='{cls.__name__} not found')
         
-        updated_object = cls._get_object_or_404(obj_id)
+        updated_object = await cls._get_object_or_404(obj_id)
         return cls.return_schema_class(**updated_object)
 
     @classmethod
