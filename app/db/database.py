@@ -12,6 +12,7 @@ client = AsyncMongoClient(MONGO_URI)
 try:
     db = client.get_database(MONGO_DB)
     users_collection = db.get_collection('users')
+    categories_collection = db.get_collection('categories')
 except Exception as e:
     raise Exception('Unable to get db or collection: ', e)
 
@@ -19,5 +20,6 @@ except Exception as e:
 async def setup_indexes():
     try:
         await users_collection.create_index([('email', ASCENDING)], unique=True)
+        await categories_collection.create_index([('name', ASCENDING)], unique=True)
     except Exception as e:
         raise Exception('Error creating index:', e)
