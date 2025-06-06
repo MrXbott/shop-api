@@ -3,6 +3,7 @@ from bson import ObjectId
 from datetime import datetime
 from app.schemas.orders import OrderItem, OrderBase, OrderCreate, OrderStatus, OrderFromDB, OrderUpdate, OrderQueryParams
 from app.db.crud.orders import OrderCRUD
+from app.services.products import Product
 from app.services.base import BaseService
 
 ALLOWED_STATUS_TRANSITIONS = {
@@ -39,13 +40,24 @@ class Order(BaseService[OrderCreate, OrderFromDB, OrderUpdate, OrderQueryParams]
 
     @classmethod
     async def create(cls, order: OrderBase) -> OrderFromDB:
-        total_price = Order._calculate_total_price(order.items)
         order_data = order.model_dump(by_alias=True)
+
+        updated_products = []
+        for item in order_data['items']:
+            product = await Product.reserve(item['product_id'], item['quantity'])
+            if not product:
+                for rollback_item in updated_products:
+                    await Product.reverse_reserve(rollback_item['product_id'], rollback_item['quantity'])
+                raise HTTPException(status_code=400, detail=f'Not enough stock for product {item['product_id']}')
+            updated_products.append(item)
+
+        total_price = Order._calculate_total_price(order.items)
         order_data.update({
             'total_price': total_price,
             'status': OrderStatus.CREATED,
             'created_at': datetime.now()
-        })
+        })        
+            
         return await super().create(OrderCreate(**order_data))
 
     @staticmethod

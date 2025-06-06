@@ -5,3 +5,13 @@ from app.services.base import BaseService
 class Product(BaseService[ProductCreate, ProductFromDB, ProductUpdate, ProductQueryParams]):
     crud_class = ProductCRUD
     return_schema_class = ProductFromDB
+
+    @classmethod
+    async def reserve(cls, product_id: str, quantity: int) -> ProductFromDB|None:
+        result = await ProductCRUD.decrease_quantity_in_stock(product_id, quantity)
+        return ProductFromDB(**result) if result else None
+    
+    @classmethod
+    async def reverse_reserve(cls, product_id, quantity) -> ProductFromDB|None:
+        result = await ProductCRUD.increase_quantity_in_stock(product_id, quantity)
+        return ProductFromDB(**result) if result else None
