@@ -1,10 +1,13 @@
 from fastapi import HTTPException
 from bson import ObjectId
 from datetime import datetime
+
 from app.schemas.orders import OrderItem, OrderBase, OrderCreate, OrderStatus, OrderFromDB, OrderUpdate, OrderQueryParams
 from app.db.crud.orders import OrderCRUD
 from app.services.products import Product
 from app.services.base import BaseService
+from app.exceptions.orders import OrderNotFound, InvalidStatusTransition, NotEnoughStock
+from app.exceptions.users import InvalidUserIdFormat
 
 ALLOWED_STATUS_TRANSITIONS = {
     OrderStatus.CREATED: {
@@ -48,7 +51,7 @@ class Order(BaseService[OrderCreate, OrderFromDB, OrderUpdate, OrderQueryParams]
             if not product:
                 for rollback_item in updated_products:
                     await Product.reverse_reserve(rollback_item['product_id'], rollback_item['quantity'])
-                raise HTTPException(status_code=400, detail=f'Not enough stock for product {item['product_id']}')
+                raise NotEnoughStock(f'Not enough stock for product {item['product_id']}')
             updated_products.append(item)
 
         total_price = Order._calculate_total_price(order.items)
@@ -61,17 +64,17 @@ class Order(BaseService[OrderCreate, OrderFromDB, OrderUpdate, OrderQueryParams]
         return await super().create(OrderCreate(**order_data))
 
     @staticmethod
-    async def update_status(order_id: str, new_status: str) -> OrderFromDB:
+    async def update_status(order_id: str, new_status: OrderStatus) -> OrderFromDB:
         order = await OrderCRUD.get_by_id(order_id)
         if not order:
-            raise HTTPException(404, 'Order not found')
+            raise OrderNotFound('Order not found')
         current_status = order['status']
         if not Order._is_valid_status_transition(current_status, new_status):
-            raise HTTPException(400, f'Invalid status transition: {current_status} → {new_status}')
+            raise InvalidStatusTransition(f'Invalid status transition: {current_status} → {new_status.value}')
         
         result = await OrderCRUD.update_status(order_id, new_status)
         if result.matched_count == 0:
-            raise HTTPException(404, 'Order not found')
+            raise OrderNotFound('Order not found')
         
         updated_order = await Order._get_object_or_404(order_id)
         return OrderFromDB(**updated_order)
@@ -82,6 +85,6 @@ class Order(BaseService[OrderCreate, OrderFromDB, OrderUpdate, OrderQueryParams]
             try:
                 ObjectId(params.user_id)
             except Exception:
-                raise HTTPException(400, detail='Invalid user_id format')
+                raise InvalidUserIdFormat('Invalid user_id format')
         return await super().get_by_params(params)
 

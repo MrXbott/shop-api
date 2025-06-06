@@ -2,6 +2,7 @@ from pydantic import BaseModel, field_validator, Field
 from typing import List, Optional
 from datetime import datetime
 from enum import Enum
+from bson import ObjectId
 
 from app.schemas.common import CommonBaseModel, BaseQueryParams
 
@@ -35,6 +36,16 @@ class OrderItem(BaseModel):
 class OrderBase(BaseModel):
     user_id: str
     items: List[OrderItem]
+
+    @field_validator('user_id', mode='before', check_fields=False)
+    def check_user_id(cls, v):
+        if isinstance(v, ObjectId):
+            return str(v)
+        try:
+            ObjectId(v)
+        except:
+            raise ValueError('Invalid user_id format')
+        return v
 
 class OrderCreate(OrderBase):
     status: OrderStatus
