@@ -18,6 +18,4 @@ class NotEnoughStock(OrderException):
     pass
 
 
-class InvalidUserIdFormat(OrderException):
-    """Invalid user_id format."""
-    pass
+
