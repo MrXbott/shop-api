@@ -33,6 +33,8 @@ class Order(BaseService[OrderCreate, OrderFromDB, OrderUpdate, OrderQueryParams]
     crud_class = OrderCRUD
     return_schema_class = OrderFromDB
 
+    not_found_exception = OrderNotFound
+
     @staticmethod
     def _is_valid_status_transition(current_status: str, new_status: str) -> bool:
         return new_status in ALLOWED_STATUS_TRANSITIONS.get(current_status, set())

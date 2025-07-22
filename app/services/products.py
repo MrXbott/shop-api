@@ -2,9 +2,15 @@ from app.schemas.products import ProductCreate, ProductFromDB, ProductQueryParam
 from app.db.crud.products import ProductCRUD
 from app.services.base import BaseService
 
+from app.exceptions.products import ProductNotFound, CreateProductException, UpdateProductException
+
 class Product(BaseService[ProductCreate, ProductFromDB, ProductUpdate, ProductQueryParams]):
     crud_class = ProductCRUD
     return_schema_class = ProductFromDB
+
+    not_found_exception = ProductNotFound
+    creation_failed_exception = CreateProductException
+    update_failed_exception = UpdateProductException
 
     @classmethod
     async def reserve(cls, product_id: str, quantity: int) -> ProductFromDB|None:

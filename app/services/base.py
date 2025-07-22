@@ -14,6 +14,10 @@ class BaseService(ABC, Generic[CreateObjSchema, ReturnObjSchema, UpdateObjSchema
     crud_class: Type
     return_schema_class: Type[ReturnObjSchema]
 
+    not_found_exception: type[Exception]
+    creation_failed_exception: type[Exception]
+    update_failed_exception: type[Exception]
+
     def __new__(cls, *args, **kwargs):
         raise TypeError(f'Cannot instantiate class {cls.__name__}')
 
@@ -21,14 +25,14 @@ class BaseService(ABC, Generic[CreateObjSchema, ReturnObjSchema, UpdateObjSchema
     async def _get_object_or_404(cls, obj_id: str) -> dict:
         obj = await cls.crud_class.get_by_id(obj_id)
         if not obj:
-            raise HTTPException(404, f'{cls.__name__} not found')
+            raise cls.not_found_exception(f'{cls.__name__} not found')
         return obj
     
     @classmethod
     async def create(cls, data: CreateObjSchema) -> ReturnObjSchema:
         result = await cls.crud_class.create(data.model_dump())
         if not result.inserted_id:
-            raise HTTPException(500, f'Failed to insert new {cls.__name__}')
+            raise cls.creation_failed_exception(f'Failed to insert new {cls.__name__}')
         
         new_data = await cls._get_object_or_404(result.inserted_id)
         return cls.return_schema_class(**new_data)
@@ -59,11 +63,11 @@ class BaseService(ABC, Generic[CreateObjSchema, ReturnObjSchema, UpdateObjSchema
     async def update_full(cls, obj_id: str, update_data: CreateObjSchema) -> ReturnObjSchema:
         result = await cls.crud_class.update_full(obj_id, update_data.model_dump())
         if result.matched_count == 0:
-            raise HTTPException(404, detail='{cls.__name__} not found')
+            raise cls.not_found_exception(f'{cls.__name__} not found')
         
         updated_object = await cls.crud_class.get_by_id(obj_id)
         if not updated_object:
-            raise HTTPException(500, detail='Failed to fetch updated {cls.__name__}')
+            raise cls.update_failed_exception(f'Failed to fetch updated {cls.__name__}')
         return cls.return_schema_class(**updated_object)
     
     @classmethod
@@ -71,14 +75,16 @@ class BaseService(ABC, Generic[CreateObjSchema, ReturnObjSchema, UpdateObjSchema
         data = {k: v for k, v in update_data.model_dump().items() if v not in (None, [], {})}
         result = await cls.crud_class.update_partial(obj_id, data)
         if result.matched_count == 0:
-            raise HTTPException(404, detail='{cls.__name__} not found')
+            raise cls.not_found_exception(f'{cls.__name__} not found')
         
-        updated_object = await cls._get_object_or_404(obj_id)
+        updated_object = await cls.crud_class.get_by_id(obj_id)
+        if not updated_object:
+            raise cls.update_failed_exception(f'Failed to fetch updated {cls.__name__}')
         return cls.return_schema_class(**updated_object)
 
     @classmethod
     async def delete(cls, obj_id: str) -> None:
         result = await cls.crud_class.delete_by_id(obj_id)
         if result.deleted_count == 0:
-            raise HTTPException(404, f'{cls.__name__} not found')
+            raise cls.not_found_exception(f'{cls.__name__} not found')
         
