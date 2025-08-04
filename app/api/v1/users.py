@@ -4,7 +4,7 @@ from app.schemas.users import UserRegisterByAdmin, UserFromDB, UserUpdate, UserQ
 from app.services.users import UserService
 from app.auth.dependencies import get_admin_user
 from app.dependencies import get_user_service
-from app.exceptions.users import UserNotFound, CreateUserException, UpdateUserException, UserEmailAlreadyExists
+from app.exceptions.users import UserNotFound, CreateUserException, UpdateUserException, UserEmailAlreadyExists, UserNoUpdateData
 
 
 router = APIRouter(prefix='/users')
@@ -42,6 +42,8 @@ async def update_user_profile(user_id: int, user_data: UserUpdate, service: User
         return await service.update_user(user_id, user_data)
     except UserNotFound as e:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(e))
+    except UserNoUpdateData as e:
+        raise HTTPException(e.status_code, e.message)
     except UpdateUserException as e:
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, str(e))
 

@@ -6,7 +6,7 @@ from app.repos.abstract.abstract_user_repo import AbstractUserRepository
 from app.models.users import UserModel
 from app.schemas.users import UserFromDB, UserCreate, UserUpdate
 
-from app.exceptions.users import UserEmailAlreadyExists, UserNotFound
+from app.exceptions.users import UserEmailAlreadyExists, UserNotFound, UserNoUpdateData
 
 
 class UserPostgresRepo(AbstractUserRepository):
@@ -58,6 +58,9 @@ class UserPostgresRepo(AbstractUserRepository):
     
     async def update_user(self, user_id: int, data: UserUpdate) -> UserFromDB:
         update_data = data.model_dump(exclude_unset=True)
+
+        if not update_data:
+            raise UserNoUpdateData()
         
         result = await self.session.execute(
             update(UserModel)

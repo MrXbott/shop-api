@@ -1,6 +1,6 @@
 from app.schemas.users import UserRegister, UserRegisterByAdmin, UserCreate, UserFromDB, UserUpdate, UserQueryParams
 from app.auth.auth import get_password_hash
-from app.exceptions.users import UserNotFound, UserEmailAlreadyExists
+from app.exceptions.users import UserNotFound, UserEmailAlreadyExists, UserNoUpdateData
 from app.repos.abstract.abstract_user_repo import AbstractUserRepository
 
 
@@ -41,7 +41,7 @@ class UserService:
     async def update_user(self, user_id: int, data: UserUpdate):
         try:
             return await self.repo.update_user(user_id, data)
-        except UserNotFound:
+        except (UserNotFound, UserNoUpdateData):
             raise
         
     async def delete_user(self, user_id) -> bool:

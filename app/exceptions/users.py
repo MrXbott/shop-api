@@ -26,3 +26,7 @@ class UserEmailAlreadyExists(UserException):
 class UpdateUserException(UserException):
     def __init__(self, message: str = 'Failed to update user'):
         super().__init__(message, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UserNoUpdateData(UserException):
+    def __init__(self, message: str = 'No data to update the user. At least one field must be provided for update.'):
+        super().__init__(message, status.HTTP_400_BAD_REQUEST)

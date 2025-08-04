@@ -16,12 +16,6 @@ class UserBase(BaseModel):
 class UserRegister(UserBase):
     """
     Model for user registration data submitted by the user.
-
-    Attributes:
-        password (str): The password provided by the user during registration.
-
-    Validation:
-        Prevents users from manually setting the role.
     """
     password: str
 
@@ -51,6 +45,8 @@ class UserUpdate(BaseModel):
     """
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+
+    model_config = ConfigDict(extra='forbid')
 
 class UserFromDB(UserBase):
     """
