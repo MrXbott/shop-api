@@ -11,7 +11,7 @@ UpdateObjSchema = TypeVar('UpdateObjSchema', bound=BaseModel)
 QueryParams = TypeVar('QueryParams', bound=BaseModel)
 
 class BaseService(ABC, Generic[CreateObjSchema, ReturnObjSchema, UpdateObjSchema, QueryParams]):
-    crud_class: Type
+    repo_class: Type
     return_schema_class: Type[ReturnObjSchema]
 
     not_found_exception: type[Exception]

@@ -3,7 +3,7 @@ from bson import ObjectId
 from datetime import datetime
 
 from app.schemas.orders import OrderItem, OrderBase, OrderCreate, OrderStatus, OrderFromDB, OrderUpdate, OrderQueryParams
-from app.db.crud.orders import OrderCRUD
+from app.repos.mongo.orders import OrderCRUD
 from app.services.products import Product
 from app.services.base import BaseService
 from app.exceptions.orders import OrderNotFound, InvalidStatusTransition, NotEnoughStock

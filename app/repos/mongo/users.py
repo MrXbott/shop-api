@@ -1,8 +1,8 @@
-from app.db.database import db
+from app.db.db_mongo import db
 
-from app.db.crud.base import BaseCRUD
+from app.repos.mongo.base import BaseCRUD
 
-class UserCRUD(BaseCRUD):
+class UserMongoRepo(BaseCRUD):
     collection = db.get_collection('users')
 
     @classmethod

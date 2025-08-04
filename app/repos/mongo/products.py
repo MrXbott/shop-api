@@ -1,9 +1,9 @@
-from app.db.database import db
+from app.db.db_mongo import db
 from pymongo.results import UpdateResult
 from pymongo import ReturnDocument
 from bson import ObjectId
 
-from app.db.crud.base import BaseCRUD
+from app.repos.mongo.base import BaseCRUD
 
 class ProductCRUD(BaseCRUD):
     collection = db.get_collection('products')

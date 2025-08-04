@@ -1,5 +1,5 @@
 from app.schemas.products import ProductCreate, ProductFromDB, ProductQueryParams, ProductUpdate
-from app.db.crud.products import ProductCRUD
+from app.repos.mongo.products import ProductCRUD
 from app.services.base import BaseService
 
 from app.exceptions.products import ProductNotFound, CreateProductException, UpdateProductException

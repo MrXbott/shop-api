@@ -1,6 +1,6 @@
-from app.db.database import db
+from app.db.db_mongo import db
 
-from app.db.crud.base import BaseCRUD
+from app.repos.mongo.base import BaseCRUD
 
 class CategoryCRUD(BaseCRUD):
     collection = db.get_collection('categories')

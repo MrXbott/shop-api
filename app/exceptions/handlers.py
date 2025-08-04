@@ -1,7 +1,9 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.responses import JSONResponse
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from bson.errors import InvalidId
+
+from app.exceptions.users import UserNotFound
 
 from app.logger_config import logger
 
@@ -12,6 +14,13 @@ def register_exception_handlers(app: FastAPI):
         return JSONResponse(
             status_code=400,
             content={'detail': 'Invalid ID format: it must be a 12-byte input or a 24-character hex string'}
+        )
+    
+    @app.exception_handler(UserNotFound)
+    async def user_not_found_handler(request: Request, exc: UserNotFound):
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={'detail': exc.message}
         )
 
     @app.exception_handler(HTTPException)

@@ -1,22 +1,19 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
-from typing import List, Optional, Literal
+from typing import Optional, Literal
 
-from app.schemas.common import CommonBaseModel, BaseQueryParams
+from app.schemas.common import BaseQueryParams
 
 class UserBase(BaseModel):
     """
     Base model for user data containing common fields.
-
-    Attributes:
-        name (str): The name of the user.
-        email (EmailStr): The email address of the user.
     """
-    name: str
+    first_name: str
+    last_name: str
     email: EmailStr
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
-class UserData(UserBase):
+class UserRegister(UserBase):
     """
     Model for user registration data submitted by the user.
 
@@ -34,13 +31,9 @@ class UserData(UserBase):
             raise ValueError('You can\'t set role manually')
         return values
 
-class UserDataByAdmin(UserBase):
+class UserRegisterByAdmin(UserBase):
     """
     Model for user registration data submitted by an admin.
-
-    Attributes:
-        password (str): The password for the new user.
-        role (Literal['admin', 'user']): The role assigned by the admin. Defaults to 'user'.
     """
     password: str
     role: Literal['admin', 'user'] = Field(default='user')
@@ -48,10 +41,6 @@ class UserDataByAdmin(UserBase):
 class UserCreate(UserBase):
     """
     Model for storing new user data in the database.
-
-    Attributes:
-        password_hash (str): The hashed password of the user.
-        role (Literal['admin', 'user']): The role of the user. Defaults to 'user'.
     """
     password_hash: str
     role: Literal['admin', 'user'] = Field(default='user')
@@ -59,27 +48,29 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     """
     Model for user data updates.
-
-    Attributes:
-        name (Optional[str]): The new name for the user (if provided).
     """
-    name: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
 
-class UserFromDB(UserBase, CommonBaseModel):
+class UserFromDB(UserBase):
     """
-    Model representing user data retrieved from the database.
-
-    Attributes:
-        password_hash (str): The hashed password of the user.
-        role (Literal['admin', 'user']): The role of the user.
+    Model representing user data retrieved from the database and visible for admins only.
     """
     password_hash: str
+    id: int
     role: Literal['admin', 'user']
 
-class UserQueryParams(BaseQueryParams):
+class UserProfile(UserBase):
+    """
+    Model representing user data retrieved from the database and visible for users.
+    """
+    role: Literal['admin', 'user']
+
+class UserQueryParams(BaseModel):
     """
     Query parameters for filtering or paginating user-related queries.
-
     Inherits all fields from BaseQueryParams.
     """
-    pass
+    limit: int = Field(default=100, ge=1, le=100)
+    skip: int = Field(default=0, ge=0)
+    role: Optional[str] = Field(default=None)

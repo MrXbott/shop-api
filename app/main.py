@@ -5,7 +5,7 @@ import os
 from app.api.v1 import auth, users, products, orders, categories
 from app.exceptions.handlers import register_exception_handlers
 from app.middleware.logging import LoggingMiddleware
-from app.db.database import setup_indexes
+from app.db.db_mongo import setup_indexes
 
 API_PREFIX = os.getenv('API_PREFIX')
 

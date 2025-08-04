@@ -1,9 +1,9 @@
-from app.db.database import db
+from app.db.db_mongo import db
 from bson import ObjectId
 from datetime import datetime
 from pymongo.results import UpdateResult
 
-from app.db.crud.base import BaseCRUD
+from app.repos.mongo.base import BaseCRUD
 
 class OrderCRUD(BaseCRUD):
     collection = db.get_collection('orders')

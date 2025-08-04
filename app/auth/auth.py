@@ -1,27 +1,48 @@
 import jwt
-import os
-from datetime import datetime, timedelta, timezone
+from uuid import uuid4
+from datetime import datetime, timedelta
 from passlib.context import CryptContext
 
+from env_config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 
-SECRET_KEY = os.getenv('SECRET_KEY')
-ALGORITHM = os.getenv('ALGORITHM')
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES'))
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
-    to_encode = data.copy()
-    expire = datetime.now() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({'exp': expire})
+def create_token(data: dict, expires_at: datetime, token_type: str, jti: str|None = None) -> str:
+    to_encode = {
+        # 'iss': ISSUER,
+        # 'aud': AUDIENCE,
+        # 'iat': datetime.now(),  
+        'exp': expires_at, 
+        'jti': jti or str(uuid4()),    
+        'scope': token_type,                
+        **data 
+    }
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def decode_access_token(token: str) -> dict | None:
+
+def create_access_token(user_id: int) -> str:
+    return create_token(
+        data={'sub': str(user_id)}, 
+        expires_at=datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES), 
+        token_type='access'
+        )
+
+
+def create_refresh_token(user_id: int, expires_at: datetime, jti: str|None = None, ):
+    return create_token(
+        data={'sub': str(user_id)}, 
+        expires_at=expires_at, 
+        token_type='refresh', 
+        jti=jti
+        )
+
+def decode_token(token: str) -> dict | None:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
-        return None
+        raise
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
