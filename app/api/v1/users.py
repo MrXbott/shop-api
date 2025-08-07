@@ -14,12 +14,8 @@ router = APIRouter(prefix='/users')
 async def create_user(user: UserRegisterByAdmin, service: UserService = Depends(get_user_service)):
     try:
         return await service.create_new_user(user)
-    except CreateUserException as e:
-        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, str(e))
-    except UserEmailAlreadyExists as e:
-        raise HTTPException(status.HTTP_409_CONFLICT, str(e))
-    except UserNotFound as e:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, str(e))
+    except (CreateUserException, UserNotFound, UserEmailAlreadyExists) as e:
+        raise HTTPException(e.status_code, e.message)
 
 @router.get('/', response_model=list[UserFromDB], response_model_by_alias=False, status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
 async def get_users(params: UserQueryParams = Depends(), service: UserService = Depends(get_user_service)):
@@ -40,12 +36,8 @@ async def get_user_by_id(user_id: int, service: UserService = Depends(get_user_s
 async def update_user_profile(user_id: int, user_data: UserUpdate, service: UserService = Depends(get_user_service)):
     try:
         return await service.update_user(user_id, user_data)
-    except UserNotFound as e:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, str(e))
-    except UserNoUpdateData as e:
+    except (UserNotFound, UserNoUpdateData, UpdateUserException) as e:
         raise HTTPException(e.status_code, e.message)
-    except UpdateUserException as e:
-        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, str(e))
 
 @router.delete('/{user_id}', status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
 async def delete_user_by_id(user_id: int, service: UserService = Depends(get_user_service)):
