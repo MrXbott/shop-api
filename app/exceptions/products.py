@@ -11,4 +11,7 @@ class CreateProductException(ProductException):
 class UpdateProductException(ProductException):
     pass
 
+class ProductNoUpdateData(ProductException):
+    pass
+
 

@@ -1,17 +1,17 @@
 from abc import ABC, abstractmethod
 
 from app.models.products import ProductModel
-from app.schemas.products import ProductCreate, ProductUpdate
+from app.schemas.products import ProductCreate, ProductUpdate, ProductFromDB
 
 
 class AbstractProductRepository(ABC):
 
     @abstractmethod
-    async def create(self, data: ProductCreate) -> ProductModel:
+    async def create(self, data: ProductCreate) -> ProductFromDB:
         pass
 
     @abstractmethod
-    async def get_by_id(self, product_id: int) -> ProductModel: 
+    async def get_by_id(self, product_id: int) -> ProductFromDB: 
         pass
 
     @abstractmethod
@@ -19,20 +19,16 @@ class AbstractProductRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_all(self) -> list[ProductModel]:
-        pass
-
-    @abstractmethod
-    async def get_by_params(self, params: dict, limit: int = 100, offset: int = 0) -> list[ProductModel]:
+    async def get_by_params(self, params: dict, limit: int = 100, offset: int = 0) -> list[ProductFromDB]:
         pass
     
     @abstractmethod
-    async def update_info(self, product_id: int, data: ProductUpdate) -> bool:
+    async def update_product(self, product_id: int, data: ProductUpdate) -> ProductFromDB:
         pass
 
-    @abstractmethod
-    async def set_quantity_in_stock(self, product_id: int, quantity: int) -> bool:
-        pass
+    # @abstractmethod
+    # async def set_quantity_in_stock(self, product_id: int, quantity: int) -> ProductFromDB:
+    #     pass
 
     @abstractmethod
     async def delete(self, product_id: int) -> bool:

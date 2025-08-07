@@ -3,74 +3,96 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repos.abstract.abstract_product_repo import AbstractProductRepository
 from app.models.products import ProductModel
-from app.schemas.products import ProductCreate, ProductUpdate
+from app.schemas.products import ProductCreate, ProductUpdate, ProductFromDB
+from app.exceptions.products import ProductNotFound, ProductNoUpdateData
 
 
-class ProductPostgresRepo(AbstractProductRepository):
+class ProductRepoPostgres(AbstractProductRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create(self, data: ProductCreate) -> ProductModel:
+    async def create(self, data: ProductCreate) -> ProductFromDB:
         product_data = data.model_dump()
         product = ProductModel(**product_data)
         self.session.add(product)
         await self.session.commit()
         await self.session.refresh(product)
-        return product
+        return ProductFromDB.model_validate(product)
 
-    async def get_by_id(self, product_id: int) -> ProductModel|None: 
-        result = await self.session.execute(select(ProductModel).where(ProductModel.id == product_id))
-        return result.scalar_one_or_none()
-
-    async def get_all(self) -> list[ProductModel]:
-        result = await self.session.execute(select(ProductModel))
-        return result.scalars().all()
+    async def get_by_id(self, product_id: int) -> ProductFromDB: 
+        result = await self.session.execute(
+            select(ProductModel)
+            .where(ProductModel.id == product_id)
+            )
+        product = result.scalar_one_or_none()
+        if not product:
+            raise ProductNotFound()
+        return ProductFromDB.model_validate(product)
     
-    async def get_by_params(self, params: dict, limit: int = 100, offset: int = 0) -> list[ProductModel]:
+
+    async def get_by_params(self, params: dict, limit: int = 100, skip: int = 0) -> list[ProductFromDB]:
         stmt = select(ProductModel)
 
         for key, value in params.items():
             if hasattr(ProductModel, key):
                 stmt = stmt.where(getattr(ProductModel, key) == value)
 
-        stmt = stmt.limit(limit).offset(offset).order_by(ProductModel.name)
+        stmt = stmt.limit(limit).offset(skip).order_by(ProductModel.id)
 
         result = await self.session.execute(stmt)
-        return result.scalars().all()
+        products = result.scalars().all()
+
+        return [ProductFromDB.model_validate(product) for product in products]
+    
     
     async def count(self) -> int:
         result = await self.session.execute(select(func.count(ProductModel.id)))
         return result.scalar_one()
     
-    async def update_info(self, product_id: int, data: ProductUpdate) -> bool:
+
+    async def update_product(self, product_id: int, data: ProductUpdate) -> ProductFromDB:
         update_data = data.model_dump(exclude_unset=True)
 
         if not update_data:
-            return False 
+            return ProductNoUpdateData()
 
         result = await self.session.execute(
             update(ProductModel)
             .where(ProductModel.id == product_id)
             .values(**update_data)
-            .returning(ProductModel.id)
+            .returning(ProductModel)
         )
-        updated_id = result.scalar()
-        await self.session.commit()
+        updated_product = result.scalar_one_or_none()
 
-        return updated_id is not None
-    
-    async def set_quantity_in_stock(self, product_id: int, quantity: int) -> bool:
-        result = await self.session.execute(
-            update(ProductModel)
-            .where(ProductModel.id == product_id)
-            .values(quantity_in_stock=quantity)
-            .returning(ProductModel.id)
-        )
-        updated_id = result.scalar()
+        if updated_product is None:
+            raise ProductNotFound()
+        
         await self.session.commit()
-        return updated_id is not None
+        return ProductFromDB.model_validate(updated_product)
+    
+    # async def set_quantity_in_stock(self, product_id: int, quantity: int) -> ProductFromDB:
+    #     result = await self.session.execute(
+    #         update(ProductModel)
+    #         .where(ProductModel.id == product_id)
+    #         .values(quantity_in_stock=quantity)
+    #         .returning(ProductModel)
+    #     )
+    #     updated_product = result.scalar_one_or_none()
+
+    #     if updated_product is None:
+    #         raise ProductNotFound()
+        
+    #     await self.session.commit()
+    #     return ProductFromDB.model_validate(updated_product)
     
     async def delete(self, product_id: int) -> bool:
-        result = await self.session.execute(delete(ProductModel).where(ProductModel.id == product_id))
+        result = await self.session.execute(
+            delete(ProductModel)
+            .where(ProductModel.id == product_id)
+            )
         await self.session.commit()
-        return result.rowcount > 0
+
+        if result.rowcount == 0:
+            raise ProductNotFound()
+        
+        return True

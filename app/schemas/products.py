@@ -4,57 +4,43 @@ from bson import ObjectId
 
 from typing import List, Optional
 
-from app.schemas.common import CommonBaseModel, BaseQueryParams
+from app.schemas.common import BaseQueryParams
 
 class ProductBase(BaseModel):
     name: str
     description: str
     price: float = Field(..., gt=0) 
-    category_id: str
+    category_id: Optional[int] = None
     manufacturer: str
     rating: Optional[float] = Field(default=0.0, ge=0.0, le=5.0)   
-    stock: int = Field(..., ge=0) 
+    quantity_in_stock: int = Field(..., ge=0) 
     tags: Optional[List[str]] = []
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
 class ProductCreate(ProductBase):
-    @field_validator('category_id', mode='before', check_fields=False)
-    def check_category_id(cls, v):
-        if isinstance(v, ObjectId):
-            return str(v)
-        try:
-            ObjectId(v)
-        except:
-            raise ValueError('Invalid category_id format')
-        return v
+    pass
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     price: Optional[float] = Field(default=None, gt=0)
-    category_id: Optional[str] = None
+    category_id: Optional[int] = None
     manufacturer: Optional[str] = None
     rating: Optional[float] = Field(default=None, ge=0.0, le=5.0)  
-    stock: Optional[int] = Field(default=None, ge=0)
+    quantity_in_stock: Optional[int] = Field(default=None, ge=0)
     tags: Optional[List[str]] = []
 
-    @field_validator('category_id', mode='before', check_fields=False)
-    def check_category_id(cls, v):
-        if isinstance(v, ObjectId):
-            return str(v)
-        try:
-            ObjectId(v)
-        except:
-            raise ValueError('Invalid category_id format')
-        return v
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
     
 
-class ProductFromDB(ProductBase, CommonBaseModel):
+class ProductFromDB(ProductBase):
     pass
 
-class ProductQueryParams(BaseQueryParams):
-    category_id: Optional[str] = Field(default=None)
+class ProductQueryParams(BaseModel):
+    limit: int = Field(default=100, ge=1, le=100)
+    skip: int = Field(default=0, ge=0)
+    category_id: Optional[int] = Field(default=None)
 
 
     
