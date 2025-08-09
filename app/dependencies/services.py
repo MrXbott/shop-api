@@ -1,7 +1,6 @@
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from fastapi import Depends
-import os
 
 from app.db.postgres.db_postgres import get_session
 from app.db.mongo.db_mongo import get_mongo_collection_factory
@@ -23,9 +22,8 @@ from app.services.auth import AuthService
 from app.services.products import ProductService
 from app.services.categories import CategoryService
 from app.services.orders import OrderService
+from app.env_config import settings
 
-
-USE_DB = os.getenv('USE_DB', 'postgres')
 
 def make_repository_factory(postgres_cls, mongo_cls, mongo_collection_name: str):
     get_mongo_collection_dep = get_mongo_collection_factory(mongo_collection_name)
@@ -34,7 +32,7 @@ def make_repository_factory(postgres_cls, mongo_cls, mongo_collection_name: str)
         session: AsyncSession = Depends(get_session),
         collection = Depends(get_mongo_collection_dep),
     ):
-        if USE_DB == 'postgres':
+        if settings.use_db == 'postgres':
             return postgres_cls(session)
         return mongo_cls(collection)
     return get_repository
@@ -46,7 +44,12 @@ get_category_repo = make_repository_factory(CategoryRepoPostgres, CategoryRepoMo
 get_order_repo = make_repository_factory(OrderRepoPostgres, OrderRepoMongo, 'orders')
 
 def get_auth_service(repo = Depends(get_auth_repo)) -> AuthService:
-    return AuthService(repo)
+    return AuthService(repo=repo,
+                       access_expire_minutes=settings.access_token_expire_minutes,
+                       refresh_expire_days=settings.refresh_token_expire_days,
+                       secret_key=settings.secret_key,
+                       algorithm=settings.algorithm
+                       )
 
 def get_user_service(repo = Depends(get_user_repo)) -> UserService:
     return UserService(repo)

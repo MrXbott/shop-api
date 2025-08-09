@@ -10,11 +10,15 @@ from app.repos.postgres.tokens import RefreshTokenRepoPostgres
 from app.exceptions.tokens import TokenNotFound, InvalidRefreshToken
 
 # from app.env_config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
-from app.env_config import settings
+# from app.env_config import settings
 
 class AuthService:
-    def __init__(self, repo: RefreshTokenRepoPostgres):
+    def __init__(self, repo: RefreshTokenRepoPostgres, access_expire_minutes: int, refresh_expire_days: int, secret_key: str, algorithm: str):
         self.repo = repo
+        self.refresh_expire_days = refresh_expire_days
+        self.access_expire_minutes = access_expire_minutes
+        self.secret_key = secret_key
+        self.algorithm = algorithm
 
     def _create_token(self, data: dict, expires_at: datetime, token_type: str, jti: str|None = None) -> str:
         to_encode = {
@@ -26,12 +30,12 @@ class AuthService:
             'scope': token_type,                
             **data 
         }
-        return encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+        return encode(to_encode, self.secret_key, algorithm=self.algorithm)
 
-    @staticmethod
-    def decode_token(token: str) -> dict:
+    # @staticmethod
+    def decode_token(self, token: str) -> dict:
         try:
-            payload = decode(token, settings.secret_key, algorithms=[settings.algorithm])
+            payload = decode(token, self.secret_key, algorithms=[self.algorithm])
         except (ExpiredSignatureError, InvalidTokenError):
             raise
 
@@ -43,7 +47,7 @@ class AuthService:
     def create_access_token(self, user_id: int) -> str:
         return self._create_token(
             data={'sub': str(user_id)}, 
-            expires_at=datetime.now() + timedelta(minutes=settings.access_token_expire_minutes), 
+            expires_at=datetime.now() + timedelta(minutes=self.access_expire_minutes), 
             token_type='access'
             )
 
@@ -67,12 +71,12 @@ class AuthService:
 
     async def add_refresh_token(self, user_id: int) -> str:
         jti = uuid4().hex
-        expires_at = datetime.now() + timedelta(days=settings.refresh_token_expire_days)
+        expires_at = datetime.now() + timedelta(days=self.refresh_expire_days)
 
         new_token = RefreshTokenModel(
             id=jti,
             user_id=user_id,
-            expires_at=datetime.now() + timedelta(days=settings.refresh_token_expire_days)
+            expires_at=datetime.now() + timedelta(days=self.refresh_expire_days)
         )
 
         await self.repo.create(new_token)
@@ -95,7 +99,7 @@ class AuthService:
         await self.repo.mark_as_used(token_from_db.id)
 
         new_jti = uuid4().hex
-        expires_at = datetime.now() + timedelta(days=settings.refresh_token_expire_days)
+        expires_at = datetime.now() + timedelta(days=self.refresh_expire_days)
         new_refresh_token = self.create_refresh_token(user_id, expires_at, new_jti)
         new_access_token = self.create_access_token(user_id)
 
