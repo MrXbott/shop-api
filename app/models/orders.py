@@ -17,7 +17,7 @@ class OrderModel(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True) 
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=None, onupdate=datetime.now, nullable=True)
     status: Mapped[OrderStatus] = mapped_column(PgEnum(OrderStatus, name='order_status'), default=OrderStatus.CREATED)
     total_price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
 

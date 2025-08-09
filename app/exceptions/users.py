@@ -1,11 +1,10 @@
 from fastapi import status
 
 class UserException(Exception):
-    def __init__(self, message: str = None, status_code: status = status.HTTP_400_BAD_REQUEST):
+    def __init__(self, message: str, status_code: status):
         self.message = message or self.__class__.__name__
         self.status_code = status_code
         super().__init__(message)
-        self.message = message
 
 class InvalidUserIdFormat(UserException):
     def __init__(self, message: str = 'Invalid user ID format'):

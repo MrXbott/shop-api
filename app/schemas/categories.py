@@ -8,7 +8,7 @@ from app.schemas.common import CommonBaseModel, BaseQueryParams
 class CategoryBase(BaseModel):
     name: str
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
 class CategoryCreate(CategoryBase):
     pass
@@ -16,7 +16,9 @@ class CategoryCreate(CategoryBase):
 class CategoryUpdate(BaseModel):
     name: Optional[str] = None
 
-class CategoryFromDB(CategoryBase, CommonBaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+class CategoryFromDB(CategoryBase):
     pass
 
 class CategoryQueryParams(BaseQueryParams):

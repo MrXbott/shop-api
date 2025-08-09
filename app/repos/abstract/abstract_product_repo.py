@@ -26,10 +26,6 @@ class AbstractProductRepository(ABC):
     async def update_product(self, product_id: int, data: ProductUpdate) -> ProductFromDB:
         pass
 
-    # @abstractmethod
-    # async def set_quantity_in_stock(self, product_id: int, quantity: int) -> ProductFromDB:
-    #     pass
-
     @abstractmethod
     async def delete(self, product_id: int) -> bool:
         pass

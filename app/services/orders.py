@@ -1,10 +1,12 @@
 from fastapi import HTTPException
 from bson import ObjectId
 from datetime import datetime
+from typing import Optional
 
 from app.schemas.orders import OrderItem, OrderBase, OrderCreate, OrderStatus, OrderFromDB, OrderUpdate, OrderQueryParams
-from app.repos.mongo.orders import OrderCRUD
-from app.services.products import Product
+# from app.repos.mongo.orders import OrderRepoMongo
+from app.repos.abstract.abstract_order_repo import AbstractOrderRepository
+from app.services.products import ProductService
 from app.services.base import BaseService
 from app.exceptions.orders import OrderNotFound, InvalidStatusTransition, NotEnoughStock
 from app.exceptions.users import InvalidUserIdFormat
@@ -29,64 +31,52 @@ ALLOWED_STATUS_TRANSITIONS = {
     OrderStatus.CANCELLED: set(),
 }
 
-class Order(BaseService[OrderCreate, OrderFromDB, OrderUpdate, OrderQueryParams]):
-    crud_class = OrderCRUD
-    return_schema_class = OrderFromDB
+class OrderService:
+    def __init__(self, repo: AbstractOrderRepository) -> None:
+        self.repo = repo
 
-    not_found_exception = OrderNotFound
-
-    @staticmethod
-    def _is_valid_status_transition(current_status: str, new_status: str) -> bool:
+    def _is_valid_status_transition(self, current_status: str, new_status: str) -> bool:
         return new_status in ALLOWED_STATUS_TRANSITIONS.get(current_status, set())
 
-    @staticmethod
-    def _calculate_total_price(items: list[OrderItem]) -> float:
+    def _calculate_total_price(self, items: list[OrderItem]) -> float:
         return sum(item.quantity * item.price_at_purchase for item in items)
 
-    @classmethod
-    async def create(cls, order: OrderBase) -> OrderFromDB:
-        order_data = order.model_dump(by_alias=True)
-
-        updated_products = []
-        for item in order_data['items']:
-            product = await Product.reserve(item['product_id'], item['quantity'])
-            if not product:
-                for rollback_item in updated_products:
-                    await Product.reverse_reserve(rollback_item['product_id'], rollback_item['quantity'])
-                raise NotEnoughStock(f'Not enough stock for product {item['product_id']}')
-            updated_products.append(item)
-
-        total_price = Order._calculate_total_price(order.items)
+    async def add_new_order(self, order: OrderBase) -> OrderFromDB:
+        order_data = order.model_dump(by_alias=True, exclude_none=True)
+    
+        total_price = self._calculate_total_price(order.items)
         order_data.update({
             'total_price': total_price,
             'status': OrderStatus.CREATED,
             'created_at': datetime.now()
         })        
-            
-        return await super().create(OrderCreate(**order_data))
+        return await self.repo.create(OrderCreate(**order_data))
 
-    @staticmethod
-    async def update_status(order_id: str, new_status: OrderStatus) -> OrderFromDB:
-        order = await OrderCRUD.get_by_id(order_id)
-        if not order:
-            raise OrderNotFound('Order not found')
+    async def get_order_by_id(self, order_id: int) -> OrderFromDB:
+        try:
+            return await self.repo.get_by_id(order_id)
+        except OrderNotFound:
+            raise
+
+    async def update_order_status(self, order_id: int, new_status: OrderStatus) -> OrderFromDB:
+        try:
+            order = await self.repo.get_by_id(order_id)
+        except OrderNotFound:
+            raise
+        
         current_status = order['status']
-        if not Order._is_valid_status_transition(current_status, new_status):
-            raise InvalidStatusTransition(f'Invalid status transition: {current_status} → {new_status.value}')
+        if not self._is_valid_status_transition(current_status, new_status):
+            raise InvalidStatusTransition(current_status, new_status)
         
-        result = await OrderCRUD.update_status(order_id, new_status)
-        if result.matched_count == 0:
-            raise OrderNotFound('Order not found')
-        
-        updated_order = await Order._get_object_or_404(order_id)
-        return OrderFromDB(**updated_order)
+        try:
+            return await self.repo.update_status(order_id, new_status)
+        except (OrderNotFound):
+            raise
     
-    @classmethod
-    async def get_by_params(cls, params: OrderQueryParams) -> list[OrderFromDB]:
-        if params.user_id:
-            try:
-                ObjectId(params.user_id)
-            except Exception:
-                raise InvalidUserIdFormat('Invalid user_id format')
-        return await super().get_by_params(params)
+    async def get_orders_by_params(self, params: OrderQueryParams) -> list[OrderFromDB]:
+        query = params.model_dump(exclude=['limit', 'skip'], exclude_none=True)
+        return await self.repo.get_by_params(query, params.limit, params.skip)
+
+    async def count_orders(self, user_id: Optional[int] = None):
+        return await self.repo.count(user_id)
 

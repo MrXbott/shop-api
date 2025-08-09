@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException, Depends, status
 
 from app.schemas.users import UserRegisterByAdmin, UserFromDB, UserUpdate, UserQueryParams
 from app.services.users import UserService
-from app.auth.dependencies import get_admin_user
-from app.dependencies import get_user_service
+from app.dependencies.users import get_admin_user
+from app.dependencies.services import get_user_service
 from app.exceptions.users import UserNotFound, CreateUserException, UpdateUserException, UserEmailAlreadyExists, UserNoUpdateData
 
 

@@ -9,7 +9,7 @@ from app.schemas.users import UserFromDB, UserCreate, UserUpdate
 from app.exceptions.users import UserEmailAlreadyExists, UserNotFound, UserNoUpdateData
 
 
-class UserPostgresRepo(AbstractUserRepository):
+class UserRepoPostgres(AbstractUserRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
 

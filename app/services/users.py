@@ -1,7 +1,7 @@
 from app.schemas.users import UserRegister, UserRegisterByAdmin, UserCreate, UserFromDB, UserUpdate, UserQueryParams
-from app.auth.auth import get_password_hash
 from app.exceptions.users import UserNotFound, UserEmailAlreadyExists, UserNoUpdateData
 from app.repos.abstract.abstract_user_repo import AbstractUserRepository
+from app.services.auth import AuthService
 
 
 class UserService:
@@ -10,7 +10,7 @@ class UserService:
 
     async def create_new_user(self, data: UserRegister|UserRegisterByAdmin) -> UserFromDB:
         user_data = data.model_dump()
-        user_data['password_hash'] = get_password_hash(user_data['password'])
+        user_data['password_hash'] = AuthService.get_password_hash(user_data['password'])
         try:
             result = await self.repo.create(UserCreate(**user_data))
             return result

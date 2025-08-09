@@ -1,5 +1,5 @@
-from pydantic import BaseModel, field_validator, Field
-from typing import List, Optional
+from pydantic import BaseModel, field_validator, Field, ConfigDict
+from typing import Optional
 from datetime import datetime
 from enum import Enum
 from bson import ObjectId
@@ -28,24 +28,24 @@ class StatusUpdate(BaseModel):
     status: OrderStatus
 
 class OrderItem(BaseModel):
-    product_id: str
-    name: str
+    product_id: int = Field(..., gt=0) 
+    # name: str
     quantity: int = Field(..., gt=0) 
     price_at_purchase: float = Field(..., gt=0) 
 
 class OrderBase(BaseModel):
-    user_id: str
-    items: List[OrderItem]
+    user_id: int
+    items: list[OrderItem]
 
-    @field_validator('user_id', mode='before', check_fields=False)
-    def check_user_id(cls, v):
-        if isinstance(v, ObjectId):
-            return str(v)
-        try:
-            ObjectId(v)
-        except:
-            raise ValueError('Invalid user_id format')
-        return v
+    # @field_validator('user_id', mode='before', check_fields=False)
+    # def check_user_id(cls, v):
+    #     if isinstance(v, ObjectId):
+    #         return str(v)
+    #     try:
+    #         ObjectId(v)
+    #     except:
+    #         raise ValueError('Invalid user_id format')
+    #     return v
 
 class OrderCreate(OrderBase):
     status: OrderStatus
@@ -62,15 +62,23 @@ class OrderCreate(OrderBase):
 class OrderUpdate(BaseModel):
     pass
 
-class OrderFromDB(OrderBase, CommonBaseModel):
-    status: OrderStatus
+class OrderFromDB(BaseModel):
     created_at: datetime
-    total_price: float
     updated_at: Optional[datetime] = None
+    status: OrderStatus
+    total_price: float
+    user_id: int
+    
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
-class OrderQueryParams(BaseQueryParams):
-    user_id: Optional[str] = Field(default=None)
+
+    
+
+class OrderQueryParams(BaseModel):
+    user_id: Optional[int] = Field(default=None)
     status: Optional[OrderStatus] = Field(default=None)
+    limit: int = Field(default=100, ge=1, le=100)
+    skip: int = Field(default=0, ge=0)
 
 
     

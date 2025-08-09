@@ -1,15 +1,19 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-# from datetime import datetime
+from pymongo.collection import Collection
 
-# from app.schemas.token import Token
 from app.repos.abstract.abstract_token_repo import AbstractRefreshTokenRepository
-# from app.db.postgres.models.tokens import RefreshToken
+from app.schemas.token import RefreshToken, RefreshTokenFromDB
 
 
-class RefreshTokenMongoRepo(AbstractRefreshTokenRepository):
-    def __init__(self, session: AsyncSession):
-        self.session = session
+class RefreshTokenRepoMongo(AbstractRefreshTokenRepository):
+    def __init__(self, collection: Collection):
+        self.collection = collection
 
-   
+    async def create(self, token: RefreshToken) -> RefreshTokenFromDB:
+        pass
+
+    async def get_by_id(self, token_id: str) -> RefreshTokenFromDB|None:
+        pass
+
+    async def mark_as_used(self, token_id: str) -> bool:
+        pass
         

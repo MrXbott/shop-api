@@ -1,19 +1,16 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Request, Response, Cookie
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
-from uuid import uuid4
-from datetime import datetime, timedelta
-import jwt
+from jwt import ExpiredSignatureError, InvalidTokenError
 
 from app.services.users import UserService
 from app.services.auth import AuthService
-from app.auth.auth import create_access_token, verify_password, create_refresh_token, decode_token
 from app.schemas.token import AccessToken, RefreshToken
 from app.schemas.users import UserFromDB, UserProfile, UserRegister
 from app.exceptions.users import UserNotFound, CreateUserException, UserEmailAlreadyExists
-from app.exceptions.tokens import TokenNotFound
-from app.dependencies import get_auth_service, get_user_service
-from app.auth.dependencies import get_current_user
+from app.exceptions.tokens import TokenNotFound, InvalidRefreshToken
+from app.dependencies.services import get_auth_service, get_user_service
+from app.dependencies.users import get_current_user
 
 from env_config import REFRESH_TOKEN_EXPIRE_DAYS, API_PREFIX
 
@@ -31,12 +28,9 @@ async def register(user: UserRegister, service: UserService = Depends(get_user_s
     
     try:
         return await service.create_new_user(user)
-    except CreateUserException as e:
-        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, str(e))
-    except UserEmailAlreadyExists as e:
-        raise HTTPException(status.HTTP_409_CONFLICT, str(e))
-    except UserNotFound as e:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, str(e))
+    except (CreateUserException, UserEmailAlreadyExists, UserNotFound) as e:
+        raise HTTPException(e.status_code, e.message)
+    
 
 @router.post('/login', response_model=AccessToken)
 async def login(response: Response, form_data: Annotated[OAuth2PasswordRequestForm, Depends()], user_service: UserService = Depends(get_user_service), auth_service: AuthService = Depends(get_auth_service)) -> AccessToken:
@@ -44,12 +38,13 @@ async def login(response: Response, form_data: Annotated[OAuth2PasswordRequestFo
     try:
         user: UserFromDB = await user_service.get_user_by_email(email)
     except UserNotFound as e:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, str(e))
+        raise HTTPException(e.status_code, e.message)
     
-    if not verify_password(form_data.password, user.password_hash):
-        raise HTTPException(status_code=401, detail='Invalid credentials')
+    if not auth_service.verify_password(form_data.password, user.password_hash):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Invalid credentials')
     
-    access_token = create_access_token(user.id)
+    # access_token = create_access_token(user.id)
+    access_token = auth_service.create_access_token(user.id)
     refresh_token = await auth_service.add_refresh_token(user.id)
 
     response.set_cookie(
@@ -69,9 +64,14 @@ async def login(response: Response, form_data: Annotated[OAuth2PasswordRequestFo
 @router.post('/token', response_model=AccessToken)
 async def refresh_token(response: Response, refresh_token: str = Cookie(...), auth_service: AuthService = Depends(get_auth_service)):
     if not refresh_token:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail='Refresh token missing')
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Refresh token missing')
 
-    new_refresh_token = await auth_service.update_refresh_token(refresh_token)
+    try:
+        new_refresh_token = await auth_service.update_refresh_token(refresh_token)
+    except InvalidRefreshToken as e:
+        raise HTTPException(e.status_code, e.message)
+    except(ExpiredSignatureError, InvalidTokenError) as e:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Invalid refresh token')
 
     response.set_cookie(
         key='refresh_token',
@@ -88,10 +88,10 @@ async def refresh_token(response: Response, refresh_token: str = Cookie(...), au
 @router.post('/logout', dependencies=[Depends(get_current_user)])
 async def logout(response: Response, refresh_token: str = Cookie(...), auth_service: AuthService = Depends(get_auth_service)):
     try:
-        await auth_service.mark_refresh_token_used(refresh_token)
-    except TokenNotFound as e:
+        await auth_service.mark_refresh_token_as_used(refresh_token)
+    except (TokenNotFound, InvalidRefreshToken) as e:
         raise HTTPException(e.status_code, e.message)
-    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError) as e:
+    except (ExpiredSignatureError, InvalidTokenError) as e:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
 
     response.delete_cookie(

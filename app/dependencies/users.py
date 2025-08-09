@@ -4,18 +4,18 @@ from typing import Annotated
 import os
 import jwt
 
-from app.auth.auth import decode_token
 from app.schemas.users import UserFromDB
 from app.services.users import UserService
+from app.services.auth import AuthService
 from app.exceptions.users import UserNotFound
-from app.dependencies import get_user_service
+from app.dependencies.services import get_user_service
 
 API_PREFIX = os.getenv('API_PREFIX')
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f'{API_PREFIX}/auth/token')
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], servise: UserService = Depends(get_user_service)) -> UserFromDB:
     try:
-        payload = decode_token(token)
+        payload = AuthService.decode_token(token)
     except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'The token is invalid or expired')
     
