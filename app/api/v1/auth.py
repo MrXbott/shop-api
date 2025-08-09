@@ -12,7 +12,8 @@ from app.exceptions.tokens import TokenNotFound, InvalidRefreshToken
 from app.dependencies.services import get_auth_service, get_user_service
 from app.dependencies.users import get_current_user
 
-from env_config import REFRESH_TOKEN_EXPIRE_DAYS, API_PREFIX
+# from app.env_config import REFRESH_TOKEN_EXPIRE_DAYS, API_PREFIX
+from app.env_config import settings
 
 router = APIRouter(prefix='/auth')
 
@@ -51,11 +52,11 @@ async def login(response: Response, form_data: Annotated[OAuth2PasswordRequestFo
         key='refresh_token',
         value=refresh_token,
         httponly=True,
-        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        expires=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
+        expires=settings.refresh_token_expire_days * 24 * 60 * 60,
         samesite='lax',
         secure=False, # True for HTTPS
-        path=f'{API_PREFIX}/auth/token'  
+        path=f'{settings.api_prefix}/auth/token'  
     )
 
     return AccessToken(access_token=access_token, token_type='bearer')
@@ -77,11 +78,11 @@ async def refresh_token(response: Response, refresh_token: str = Cookie(...), au
         key='refresh_token',
         value=new_refresh_token.refresh_token,
         httponly=True,
-        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        expires=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
+        expires=settings.refresh_token_expire_days * 24 * 60 * 60,
         samesite='lax',
         secure=False, # True for HTTPS
-        path=f'{API_PREFIX}/auth/token'  
+        path=f'{settings.api_prefix}/auth/token'  
     )
     return AccessToken(access_token=new_refresh_token.access_token)
 
@@ -99,7 +100,7 @@ async def logout(response: Response, refresh_token: str = Cookie(...), auth_serv
         httponly=True,
         secure=False,
         samesite='lax', 
-        path=f'{API_PREFIX}/auth/token' 
+        path=f'{settings.api_prefix}/auth/token' 
     )
 
     return {'detail': 'Logged out successfully'}

@@ -21,7 +21,8 @@ from app.models.tokens import RefreshTokenModel
 print("=== REGISTERED TABLES ===")
 print(Base.metadata.tables.keys())
 
-from env_config import POSTGRES_URL 
+# from app.env_config import POSTGRES_URL
+from app.env_config import settings 
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -71,7 +72,7 @@ async def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    connectable = create_async_engine(POSTGRES_URL, poolclass=pool.NullPool)
+    connectable = create_async_engine(settings.postgres_url, poolclass=pool.NullPool)
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
