@@ -6,13 +6,12 @@ from jwt import ExpiredSignatureError, InvalidTokenError
 from app.services.users import UserService
 from app.services.auth import AuthService
 from app.schemas.token import AccessToken, RefreshToken
-from app.schemas.users import UserFromDB, UserProfile, UserRegister
+from app.schemas.users import UserFromDB, UserProfile, UserRegister, UserChangePassword
 from app.exceptions.users import UserNotFound, CreateUserException, UserEmailAlreadyExists
 from app.exceptions.tokens import TokenNotFound, InvalidRefreshToken
 from app.dependencies.services import get_auth_service, get_user_service
 from app.dependencies.users import get_current_user
 
-# from app.env_config import REFRESH_TOKEN_EXPIRE_DAYS, API_PREFIX
 from app.env_config import settings
 
 router = APIRouter(prefix='/auth')
@@ -42,9 +41,8 @@ async def login(response: Response, form_data: Annotated[OAuth2PasswordRequestFo
         raise HTTPException(e.status_code, e.message)
     
     if not auth_service.verify_password(form_data.password, user.password_hash):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Invalid credentials')
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Wrong login or password')
     
-    # access_token = create_access_token(user.id)
     access_token = auth_service.create_access_token(user.id)
     refresh_token = await auth_service.add_refresh_token(user.id)
 
@@ -112,5 +110,20 @@ async def get_user_profile(current_user: Annotated[UserFromDB, Depends(get_curre
 
 
 @router.post('/change_password')
-async def change_password(urrent_user: Annotated[UserFromDB, Depends(get_current_user)]):
-    pass
+async def change_password(
+    data: UserChangePassword, 
+    current_user: Annotated[UserFromDB, Depends(get_current_user)],
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
+    user_service: Annotated[UserService, Depends(get_user_service)],
+    ):
+    
+    if not auth_service.verify_password(data.current_password, current_user.password_hash):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail='Wrong current password')
+
+    try:
+        await user_service.change_password(current_user.id, data.new_password)
+        await auth_service.mark_all_refresh_tokens_as_used(current_user.id)
+    except UserNotFound as e:
+        raise HTTPException(e.status_code, e.message)
+
+    return {'message': 'Password changed successfully'}

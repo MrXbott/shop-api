@@ -43,6 +43,13 @@ class UserService:
             return await self.repo.update_user(user_id, data)
         except (UserNotFound, UserNoUpdateData):
             raise
+    
+    async def change_password(self, user_id: int, new_password: str):
+        new_password_hash = AuthService.get_password_hash(new_password)
+        try:
+            return await self.repo.update_password(user_id, new_password_hash)
+        except UserNotFound:
+            raise
         
     async def delete_user(self, user_id) -> bool:
         try:

@@ -6,6 +6,7 @@ from app.schemas.token import AccessToken, RefreshToken, RefreshTokenFromDB
 from app.repos.abstract.abstract_token_repo import AbstractRefreshTokenRepository
 from app.models.tokens import RefreshTokenModel
 from app.exceptions.tokens import TokenNotFound
+from app.exceptions.users import UserNotFound
 
 
 class RefreshTokenRepoPostgres(AbstractRefreshTokenRepository):
@@ -39,18 +40,16 @@ class RefreshTokenRepoPostgres(AbstractRefreshTokenRepository):
         
         await self.session.commit()
         return True
-        # await self.session.refresh(token)
 
-        # result = await self.session.execute(
-        #     update(OrderModel)
-        #     .where(OrderModel.id == order_id)
-        #     .values(status=status, updated_at=datetime.now())
-        #     .execution_options(synchronize_session='fetch')
-        #     .returning(OrderModel)
-        # )
-        # updated_order = result.scalar_one_or_none()
-        # if updated_order is None:
-        #     raise OrderNotFound()
+    async def mark_all_as_used(self, user_id: int) -> bool:
+        result = await self.session.execute(
+            update(RefreshTokenModel)
+            .where(RefreshTokenModel.user_id == user_id)
+            .values(is_used=True)
+        )
+        await self.session.commit()
         
-        # await self.session.commit()
-        # return OrderFromDB.model_validate(updated_order)
+        if result.rowcount == 0:
+            raise UserNotFound()
+        
+        return True

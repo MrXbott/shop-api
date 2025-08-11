@@ -9,8 +9,6 @@ from app.models.tokens import RefreshTokenModel
 from app.repos.postgres.tokens import RefreshTokenRepoPostgres
 from app.exceptions.tokens import TokenNotFound, InvalidRefreshToken
 
-# from app.env_config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
-# from app.env_config import settings
 
 class AuthService:
     def __init__(self, repo: RefreshTokenRepoPostgres, access_expire_minutes: int, refresh_expire_days: int, secret_key: str, algorithm: str):
@@ -32,7 +30,6 @@ class AuthService:
         }
         return encode(to_encode, self.secret_key, algorithm=self.algorithm)
 
-    # @staticmethod
     def decode_token(self, token: str) -> dict:
         try:
             payload = decode(token, self.secret_key, algorithms=[self.algorithm])
@@ -125,3 +122,6 @@ class AuthService:
             return await self.repo.mark_as_used(token_id)
         except TokenNotFound:
             raise
+
+    async def mark_all_refresh_tokens_as_used(self, user_id: int) -> bool:
+        return await self.repo.mark_all_as_used(user_id)

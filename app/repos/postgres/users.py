@@ -76,6 +76,20 @@ class UserRepoPostgres(AbstractUserRepository):
         await self.session.commit()
 
         return UserFromDB.model_validate(updated_user)
+    
+    async def update_password(self, user_id: int, new_password_hash: str) -> None:
+        result = await self.session.execute(
+            update(UserModel)
+            .where(UserModel.id == user_id)
+            .values(password_hash=new_password_hash)
+            .returning(UserModel.id)
+        )
+        await self.session.commit()
+
+        updated_user = result.scalar_one_or_none()
+
+        if updated_user is None:
+            raise UserNotFound()
 
 
     async def delete(self, identifier: int|str) -> bool:

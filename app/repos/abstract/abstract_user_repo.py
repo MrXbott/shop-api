@@ -30,5 +30,9 @@ class AbstractUserRepository(ABC):
         pass
 
     @abstractmethod
+    async def update_password(self, user_id: int, new_password_hash: str) -> None:
+        pass
+
+    @abstractmethod
     async def delete(self, identifier: int|str) -> bool:
         pass

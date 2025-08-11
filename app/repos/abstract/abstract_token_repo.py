@@ -16,3 +16,7 @@ class AbstractRefreshTokenRepository(ABC):
     @abstractmethod
     async def mark_as_used(self, token_id: str) -> bool:
         pass
+
+    @abstractmethod
+    async def mark_all_as_used(self, user_id: int) -> bool:
+        pass
