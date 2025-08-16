@@ -1,14 +1,14 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Request, Response, Cookie
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
-from jwt import ExpiredSignatureError, InvalidTokenError
 
 from app.services.users import UserService
 from app.services.auth import AuthService
-from app.schemas.token import AccessToken, RefreshToken
+from app.schemas.tokens import AccessToken, RefreshToken
 from app.schemas.users import UserFromDB, UserProfile, UserRegister, UserChangePassword
-from app.exceptions.users import UserNotFound, CreateUserException, UserEmailAlreadyExists
-from app.exceptions.tokens import TokenNotFound, InvalidRefreshToken
+from app.exceptions.users import UserNotFound, UserUnauthorized, CreateUserException, UserEmailAlreadyExists
+from app.exceptions.tokens import TokenNotFound, InvalidToken, ExpiredToken, TokenException
+from app.exceptions.sessions import SessionIdNotFound, SessionException, SessionNotFound
 from app.dependencies.services import get_auth_service, get_user_service
 from app.dependencies.users import get_current_user
 
@@ -17,7 +17,7 @@ from app.env_config import settings
 router = APIRouter(prefix='/auth')
 
 
-@router.post('/register', response_model=UserProfile, response_model_by_alias=False, status_code=status.HTTP_201_CREATED)
+@router.post('/register', response_model=UserProfile, status_code=status.HTTP_201_CREATED)
 async def register(user: UserRegister, service: UserService = Depends(get_user_service)):
     try:
         existing = await service.get_user_by_email(user.email)
@@ -33,18 +33,24 @@ async def register(user: UserRegister, service: UserService = Depends(get_user_s
     
 
 @router.post('/login', response_model=AccessToken)
-async def login(response: Response, form_data: Annotated[OAuth2PasswordRequestForm, Depends()], user_service: UserService = Depends(get_user_service), auth_service: AuthService = Depends(get_auth_service)) -> AccessToken:
-    email = form_data.username
+async def login(request: Request, 
+                response: Response, 
+                form_data: Annotated[OAuth2PasswordRequestForm, Depends()],  
+                auth_service: AuthService = Depends(get_auth_service)
+                ) -> AccessToken:
     try:
-        user: UserFromDB = await user_service.get_user_by_email(email)
-    except UserNotFound as e:
+        user = await auth_service.authenticate_user(form_data.username, form_data.password)
+    except (UserNotFound, UserUnauthorized) as e:
         raise HTTPException(e.status_code, e.message)
     
-    if not auth_service.verify_password(form_data.password, user.password_hash):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Wrong login or password')
-    
-    access_token = auth_service.create_access_token(user.id)
-    refresh_token = await auth_service.add_refresh_token(user.id)
+    client_host = request.client.host
+    forwarded_for = request.headers.get('X-Forwarded-For')
+    ip_address = forwarded_for.split(',')[0].strip() if forwarded_for else client_host
+    user_agent = request.headers.get('User-Agent', 'unknown')
+
+    access_token, refresh_token = await auth_service.login(user_id=user.id, 
+                                                           user_agent=user_agent,
+                                                           ip=ip_address)
 
     response.set_cookie(
         key='refresh_token',
@@ -61,16 +67,15 @@ async def login(response: Response, form_data: Annotated[OAuth2PasswordRequestFo
 
 
 @router.post('/token', response_model=AccessToken)
-async def refresh_token(response: Response, refresh_token: str = Cookie(...), auth_service: AuthService = Depends(get_auth_service)):
+async def refresh_token(request: Request, response: Response, auth_service: AuthService = Depends(get_auth_service)):
+    refresh_token = request.cookies.get('refresh_token')
     if not refresh_token:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Refresh token missing')
 
     try:
         new_refresh_token = await auth_service.update_refresh_token(refresh_token)
-    except InvalidRefreshToken as e:
+    except (InvalidToken, ExpiredToken, SessionException, SessionNotFound, TokenException) as e:
         raise HTTPException(e.status_code, e.message)
-    except(ExpiredSignatureError, InvalidTokenError) as e:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Invalid refresh token')
 
     response.set_cookie(
         key='refresh_token',
@@ -85,13 +90,16 @@ async def refresh_token(response: Response, refresh_token: str = Cookie(...), au
     return AccessToken(access_token=new_refresh_token.access_token)
 
 @router.post('/logout', dependencies=[Depends(get_current_user)])
-async def logout(response: Response, refresh_token: str = Cookie(...), auth_service: AuthService = Depends(get_auth_service)):
+async def logout(request: Request, response: Response, refresh_token: str = Cookie(...), auth_service: AuthService = Depends(get_auth_service)):
+    refresh_token = request.cookies.get('refresh_token')
+    if not refresh_token:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED)
+    
     try:
-        await auth_service.mark_refresh_token_as_used(refresh_token)
-    except (TokenNotFound, InvalidRefreshToken) as e:
+        session_id = await auth_service.get_session_id_by_refresh_token(refresh_token)
+        await auth_service.logout(session_id)
+    except (InvalidToken, ExpiredToken, SessionIdNotFound) as e:
         raise HTTPException(e.status_code, e.message)
-    except (ExpiredSignatureError, InvalidTokenError) as e:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
 
     response.delete_cookie(
         key='refresh_token',
@@ -110,19 +118,18 @@ async def get_user_profile(current_user: Annotated[UserFromDB, Depends(get_curre
 
 
 @router.post('/change_password')
-async def change_password(
-    data: UserChangePassword, 
-    current_user: Annotated[UserFromDB, Depends(get_current_user)],
-    auth_service: Annotated[AuthService, Depends(get_auth_service)],
-    user_service: Annotated[UserService, Depends(get_user_service)],
-    ):
+async def change_password(data: UserChangePassword, 
+                          current_user: Annotated[UserFromDB, Depends(get_current_user)],
+                          auth_service: Annotated[AuthService, Depends(get_auth_service)],
+                        #   user_service: Annotated[UserService, Depends(get_user_service)]
+                          ):
     
-    if not auth_service.verify_password(data.current_password, current_user.password_hash):
+    if not auth_service.user_service.verify_password(data.current_password, current_user.password_hash):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail='Wrong current password')
 
     try:
-        await user_service.change_password(current_user.id, data.new_password)
-        await auth_service.mark_all_refresh_tokens_as_used(current_user.id)
+        await auth_service.user_service.change_password(current_user.id, data.new_password)
+        await auth_service.revoke_all_sessions_for_user(current_user.id)
     except UserNotFound as e:
         raise HTTPException(e.status_code, e.message)
 

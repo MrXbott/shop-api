@@ -17,6 +17,7 @@ from app.models.products import ProductModel
 from app.models.categories import CategoryModel
 from app.models.orders import OrderModel, OrderItemModel, OrderStatus
 from app.models.tokens import RefreshTokenModel
+from app.models.sessions import SessionModel
 
 print("=== REGISTERED TABLES ===")
 print(Base.metadata.tables.keys())

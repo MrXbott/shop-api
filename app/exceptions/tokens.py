@@ -10,6 +10,14 @@ class TokenNotFound(TokenException):
     def __init__(self, message='Token not found'):
         super().__init__(message, status.HTTP_404_NOT_FOUND)
 
-class InvalidRefreshToken(TokenException):
-    def __init__(self, message='Invalid token. Token revoked or does not exist.'):
+class InvalidToken(TokenException):
+    def __init__(self, message='Invalid token'):
+        super().__init__(message, status.HTTP_401_UNAUTHORIZED)
+
+class InvalidTokenPayload(TokenException):
+    def __init__(self, message='Invalid token payload'):
+        super().__init__(message, status.HTTP_401_UNAUTHORIZED)
+
+class ExpiredToken(TokenException):
+    def __init__(self, message='Token has expired'):
         super().__init__(message, status.HTTP_401_UNAUTHORIZED)

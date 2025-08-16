@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     algorithm: str
     access_token_expire_minutes: int = Field(..., ge=0) 
     refresh_token_expire_days: int = Field(..., ge=0) 
+    session_lifetime_days: int = Field(..., ge=0) 
     api_prefix: str
     mongo_uri: str
     mongo_db: str

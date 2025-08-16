@@ -1,22 +1,22 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 
-from app.schemas.token import AccessToken, RefreshToken, RefreshTokenFromDB
-from app.models.tokens import RefreshTokenModel
+from app.schemas.tokens import RefreshTokenFromDB
 
 
 class AbstractRefreshTokenRepository(ABC):
     @abstractmethod
-    async def create(self, token: RefreshToken) -> RefreshTokenFromDB:
+    async def add_refresh_token(self, session_id: str, jti: str, expires_at: datetime) -> None:
         pass
 
     @abstractmethod
-    async def get_by_id(self, token_id: str) -> RefreshTokenFromDB|None:
+    async def get_by_id(self, jti: str) -> RefreshTokenFromDB:
         pass
 
     @abstractmethod
-    async def mark_as_used(self, token_id: str) -> bool:
+    async def mark_as_used(self, session_id: str) -> None:
         pass
 
     @abstractmethod
-    async def mark_all_as_used(self, user_id: int) -> bool:
+    async def mark_tokens_as_used(self, session_ids: list[str]) -> None:
         pass

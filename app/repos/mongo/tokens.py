@@ -1,7 +1,7 @@
 from pymongo.collection import Collection
 
 from app.repos.abstract.abstract_token_repo import AbstractRefreshTokenRepository
-from app.schemas.token import RefreshToken, RefreshTokenFromDB
+from app.schemas.tokens import RefreshToken, RefreshTokenFromDB
 
 
 class RefreshTokenRepoMongo(AbstractRefreshTokenRepository):

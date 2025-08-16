@@ -14,6 +14,10 @@ class UserNotFound(UserException):
     def __init__(self, message='User not found'):
         super().__init__(message, status.HTTP_404_NOT_FOUND)
 
+class UserUnauthorized(UserException):
+    def __init__(self, message='Wrong login or password'):
+        super().__init__(message, status.HTTP_401_UNAUTHORIZED)
+
 class CreateUserException(UserException):
     def __init__(self, message: str = 'Failed to create user'):
         super().__init__(message, status.HTTP_500_INTERNAL_SERVER_ERROR)
