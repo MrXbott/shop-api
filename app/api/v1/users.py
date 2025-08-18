@@ -1,48 +1,60 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 
-from app.schemas.users import UserRegisterByAdmin, UserFromDB, UserUpdate, UserQueryParams
+from app.schemas.users import UserRegisterByAdmin, UserFromDB, UserUpdate, UserQueryParams, UserProfile
 from app.services.users import UserService
-from app.dependencies.users import get_admin_user
+from app.dependencies.users import get_admin_user, get_current_user
 from app.dependencies.services import get_user_service
 from app.exceptions.users import UserNotFound, CreateUserException, UpdateUserException, UserEmailAlreadyExists, UserNoUpdateData
 
 
 router = APIRouter(prefix='/users')
 
-# ------ admin routes
-@router.post('/', response_model=UserFromDB, response_model_by_alias=False, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_admin_user)])
-async def create_user(user: UserRegisterByAdmin, service: UserService = Depends(get_user_service)):
+@router.get('/{user_id}', response_model=UserFromDB, status_code=status.HTTP_200_OK, dependencies=[Depends(get_current_user)])
+async def get_user_profile_by_id(user_id: int, user_service: UserService = Depends(get_user_service)):
     try:
-        return await service.create_new_user(user)
+        return await user_service.get_user_by_id(user_id)
+    except UserNotFound as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(e))
+    
+@router.get('/me', response_model=UserProfile, response_model_by_alias=False, status_code=status.HTTP_200_OK)
+async def get_my_profile(current_user: UserFromDB = Depends(get_current_user)):
+    return current_user
+
+@router.patch('/me', response_model=UserProfile, status_code=status.HTTP_200_OK, dependencies=[Depends(get_current_user)])
+async def update_my_profile(user_data: UserUpdate, user_service: UserService = Depends(get_user_service)):
+    try:
+        return await user_service.update_user(create_user.id, user_data)
+    except (UserNotFound, UserNoUpdateData, UpdateUserException) as e:
+        raise HTTPException(e.status_code, e.message)
+
+
+# ------ admin routes
+@router.post('/', response_model=UserFromDB, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_admin_user)])
+async def create_user(user: UserRegisterByAdmin, user_service: UserService = Depends(get_user_service)):
+    try:
+        return await user_service.create_new_user(user)
     except (CreateUserException, UserNotFound, UserEmailAlreadyExists) as e:
         raise HTTPException(e.status_code, e.message)
 
-@router.get('/', response_model=list[UserFromDB], response_model_by_alias=False, status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
-async def get_users(params: UserQueryParams = Depends(), service: UserService = Depends(get_user_service)):
-    return await service.get_users_by_params(params)
+@router.get('/', response_model=list[UserFromDB], status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
+async def get_users(params: UserQueryParams = Depends(), user_service: UserService = Depends(get_user_service)):
+    return await user_service.get_users_by_params(params)
 
 @router.get('/count', status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
-async def get_users_count(service: UserService = Depends(get_user_service)):
-    return {'users_count': await service.count_users()}
+async def get_users_count(user_service: UserService = Depends(get_user_service)):
+    return {'users_count': await user_service.count_users()}
 
-@router.get('/{user_id}', response_model=UserFromDB, response_model_by_alias=False, status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
-async def get_user_by_id(user_id: int, service: UserService = Depends(get_user_service)):
+@router.patch('/{user_id}', response_model=UserFromDB, status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
+async def update_user_profile_by_id(user_id: int, user_data: UserUpdate, user_service: UserService = Depends(get_user_service)):
     try:
-        return await service.get_user_by_id(user_id)
-    except UserNotFound as e:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, str(e))
-
-@router.patch('/{user_id}', response_model=UserFromDB, response_model_by_alias=False, status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
-async def update_user_profile(user_id: int, user_data: UserUpdate, service: UserService = Depends(get_user_service)):
-    try:
-        return await service.update_user(user_id, user_data)
+        return await user_service.update_user(user_id, user_data)
     except (UserNotFound, UserNoUpdateData, UpdateUserException) as e:
         raise HTTPException(e.status_code, e.message)
 
 @router.delete('/{user_id}', status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
-async def delete_user_by_id(user_id: int, service: UserService = Depends(get_user_service)):
+async def delete_user_by_id(user_id: int, user_service: UserService = Depends(get_user_service)):
     try:
-        result = await service.delete_user(user_id)
+        await user_service.delete_user(user_id)
         return {'message': 'User deleted'}
     except UserNotFound as e:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(e))

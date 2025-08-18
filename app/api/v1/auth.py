@@ -112,16 +112,10 @@ async def logout(request: Request, response: Response, refresh_token: str = Cook
     return {'detail': 'Logged out successfully'}
 
 
-@router.get('/me', response_model=UserProfile, response_model_by_alias=False, status_code=status.HTTP_200_OK)
-async def get_user_profile(current_user: Annotated[UserFromDB, Depends(get_current_user)]):
-    return current_user
-
-
 @router.post('/change_password')
 async def change_password(data: UserChangePassword, 
                           current_user: Annotated[UserFromDB, Depends(get_current_user)],
                           auth_service: Annotated[AuthService, Depends(get_auth_service)],
-                        #   user_service: Annotated[UserService, Depends(get_user_service)]
                           ):
     
     if not auth_service.user_service.verify_password(data.current_password, current_user.password_hash):
