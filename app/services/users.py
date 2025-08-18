@@ -1,25 +1,16 @@
 from app.schemas.users import UserRegister, UserRegisterByAdmin, UserCreate, UserFromDB, UserUpdate, UserQueryParams
 from app.exceptions.users import UserNotFound, UserEmailAlreadyExists, UserNoUpdateData
 from app.repos.abstract.abstract_user_repo import AbstractUserRepository
-
-from passlib.context import CryptContext
+from app.utils.passwords import get_password_hash
 
 
 class UserService:
     def __init__(self, repo: AbstractUserRepository) -> None:
         self.repo = repo
 
-    def _get_password_hash(self, password: str) -> str:
-        pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
-        return pwd_context.hash(password)
-    
-    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
-        return pwd_context.verify(plain_password, hashed_password)
-
     async def create_new_user(self, data: UserRegister|UserRegisterByAdmin) -> UserFromDB:
         user_data = data.model_dump()
-        user_data['password_hash'] = self._get_password_hash(user_data['password'])
+        user_data['password_hash'] = get_password_hash(user_data['password'])
         try:
             return await self.repo.create(UserCreate(**user_data))
         except UserEmailAlreadyExists:
@@ -50,13 +41,6 @@ class UserService:
         try:
             return await self.repo.update_user(user_id, data)
         except (UserNotFound, UserNoUpdateData):
-            raise
-    
-    async def change_password(self, user_id: int, new_password: str):
-        new_password_hash = self._get_password_hash(new_password)
-        try:
-            return await self.repo.update_password(user_id, new_password_hash)
-        except UserNotFound:
             raise
         
     async def delete_user(self, user_id) -> bool:

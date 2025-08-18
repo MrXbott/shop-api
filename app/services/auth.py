@@ -14,6 +14,7 @@ from app.exceptions.tokens import TokenNotFound, InvalidToken, ExpiredToken, Inv
 from app.exceptions.sessions import SessionIdNotFound, SessionException, SessionNotFound
 from app.exceptions.users import UserNotFound, UserUnauthorized
 from app.services.users import UserService
+from app.utils.passwords import get_password_hash, verify_password
 
 
 class AuthService:
@@ -148,7 +149,7 @@ class AuthService:
         except UserNotFound:
             raise
 
-        if not self.user_service.verify_password(password, user.password_hash):
+        if not verify_password(password, user.password_hash):
             raise UserUnauthorized()
 
         return user
@@ -170,3 +171,10 @@ class AuthService:
         # to do: make this in one transaction 
         await self.session_repo.revoke_session(session_id)
         await self.token_repo.mark_as_used(session_id)
+
+    async def change_password(self, user_id: int, new_password: str):
+        new_password_hash = get_password_hash(new_password)
+        try:
+            return await self.user_service.repo.update_password(user_id, new_password_hash)
+        except UserNotFound:
+            raise
