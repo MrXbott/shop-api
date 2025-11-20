@@ -4,8 +4,9 @@ from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta
 from uuid import uuid4
+from pydantic import ValidationError
 
-from app.schemas.tokens import RefreshToken
+from app.schemas.tokens import RefreshToken, TokenPayload
 from app.schemas.users import UserFromDB
 from app.models.tokens import RefreshTokenModel
 from app.repos.postgres.tokens import RefreshTokenRepoPostgres
@@ -49,18 +50,6 @@ class AuthService:
         }
         return encode(to_encode, self.secret_key, algorithm=self.algorithm)
 
-    def decode_token(self, token: str) -> dict:
-        try:
-            payload = decode(token, self.secret_key, algorithms=[self.algorithm])
-        except ExpiredSignatureError:
-            raise ExpiredToken()
-        except InvalidTokenError:
-            raise InvalidToken()
-
-        if not payload:
-            raise InvalidToken()
-        return payload
-
 
     def create_access_token(self, user_id: int) -> str:
         return self._create_token(
@@ -76,6 +65,22 @@ class AuthService:
             token_type='refresh', 
             jti=jti
             )
+    
+    def decode_token(self, token: str) -> TokenPayload:
+        try:
+            payload = decode(token, self.secret_key, algorithms=[self.algorithm])
+        except ExpiredSignatureError:
+            raise ExpiredToken()
+        except InvalidTokenError:
+            raise InvalidToken()
+
+        if not payload:
+            raise InvalidToken()
+        
+        try:
+            return TokenPayload(**payload)
+        except ValidationError:
+            raise InvalidTokenPayload()
     
 
     async def add_refresh_token(self, user_id: int, session_id: str) -> str:
@@ -95,13 +100,10 @@ class AuthService:
     async def update_refresh_token(self, token: RefreshToken) -> RefreshToken:
         payload = self.decode_token(token)
         
-        user_id = int(payload.get('sub'))
-        session_id = payload.get('session_id')
-        jti = payload.get('jti')
+        user_id = payload.sub
+        session_id = payload.session_id
+        jti = payload.jti
 
-        if not user_id or not session_id or not jti:
-            raise InvalidTokenPayload()
-        
         try:
             session = await self.session_repo.get_by_id(session_id)
         except SessionNotFound:
@@ -175,6 +177,6 @@ class AuthService:
     async def change_password(self, user_id: int, new_password: str):
         new_password_hash = get_password_hash(new_password)
         try:
-            return await self.user_service.repo.update_password(user_id, new_password_hash)
+            await self.user_service.repo.update_password(user_id, new_password_hash)
         except UserNotFound:
             raise

@@ -1,10 +1,8 @@
 from pydantic import BaseModel, ConfigDict
+from typing import Optional
 from datetime import datetime
 
 class AccessToken(BaseModel):
-    '''
-    Response model for access token returned upon successful authentication.
-    '''
     access_token: str
     token_type: str = 'bearer' # bearer for example
 
@@ -19,3 +17,13 @@ class RefreshTokenFromDB(BaseModel):
     expires_at: datetime
     is_used: bool
     created_at: datetime
+
+
+class TokenPayload(BaseModel):
+    sub: int
+    session_id: Optional[str] = None
+    jti: str
+    scope: str
+    exp: int
+
+    model_config = ConfigDict(extra='allow')
