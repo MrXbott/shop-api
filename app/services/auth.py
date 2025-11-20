@@ -42,7 +42,7 @@ class AuthService:
             # 'iss': ISSUER,
             # 'aud': AUDIENCE,
             # 'iat': datetime.now(),  
-            'exp': expires_at, 
+            'exp': int(expires_at.timestamp()), 
             'jti': jti or str(uuid4()),    
             'scope': token_type,                
             **data 
@@ -78,18 +78,18 @@ class AuthService:
             )
     
 
-    async def add_refresh_token(self, user_id: int) -> str:
+    async def add_refresh_token(self, user_id: int, session_id: str) -> str:
         jti = uuid4().hex
         expires_at = datetime.now() + timedelta(days=self.refresh_expire_days)
 
         new_token = RefreshTokenModel(
             id=jti,
-            user_id=user_id,
+            session_id=session_id,
             expires_at=expires_at
         )
 
         await self.token_repo.add_refresh_token(new_token)
-        return self.create_refresh_token(user_id, expires_at, jti)
+        return self.create_refresh_token(user_id, session_id, expires_at, jti)
 
 
     async def update_refresh_token(self, token: RefreshToken) -> RefreshToken:
