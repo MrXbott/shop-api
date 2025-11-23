@@ -1,4 +1,3 @@
-from app.repos.mongo.categories import CategoryRepoMongo
 from app.schemas.categories import CategoryCreate, CategoryFromDB, CategoryUpdate, CategoryQueryParams
 from app.services.base import BaseService
 from app.exceptions.categories import CategoryNotFound, CreateCategoryException, UpdateCategoryException, CategoryNoUpdateData
