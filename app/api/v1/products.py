@@ -21,7 +21,7 @@ async def get_products_count(service: ProductService = Depends(get_product_servi
     return {'products_count': await service.count_products()}
 
 @router.patch('/{product_id}', response_model=ProductFromDB, response_model_by_alias=False, status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
-async def update_product(product_id: str, product_data: ProductUpdate, service: ProductService = Depends(get_product_service)):
+async def update_product(product_id: int, product_data: ProductUpdate, service: ProductService = Depends(get_product_service)):
     try:
         return await service.update_product(product_id, product_data)
     except (ProductNotFound, UpdateProductException, ProductNoUpdateData) as e:
@@ -42,7 +42,7 @@ async def get_products(params: ProductQueryParams = Depends(), service: ProductS
     return await service.get_products_by_params(params)
 
 @router.get('/{product_id}', response_model=ProductFromDB, response_model_by_alias=False, status_code=status.HTTP_200_OK)
-async def get_product_by_id(product_id: str, service: ProductService = Depends(get_product_service)):
+async def get_product_by_id(product_id: int, service: ProductService = Depends(get_product_service)):
     try:
         return await service.get_product_by_id(product_id)
     except ProductNotFound as e:
