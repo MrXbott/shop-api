@@ -11,6 +11,7 @@ from app.exceptions.tokens import TokenNotFound, InvalidToken, ExpiredToken, Tok
 from app.exceptions.sessions import SessionIdNotFound, SessionException, SessionNotFound
 from app.dependencies.services import get_auth_service, get_user_service
 from app.dependencies.users import get_current_user
+from app.utils.passwords import verify_password
 
 from app.env_config import settings
 
@@ -118,11 +119,11 @@ async def change_password(data: UserChangePassword,
                           auth_service: Annotated[AuthService, Depends(get_auth_service)],
                           ):
     
-    if not auth_service.user_service.verify_password(data.current_password, current_user.password_hash):
+    if not verify_password(data.current_password, current_user.password_hash):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail='Wrong current password')
 
     try:
-        await auth_service.user_service.change_password(current_user.id, data.new_password)
+        await auth_service.change_password(current_user.id, data.new_password)
         await auth_service.revoke_all_sessions_for_user(current_user.id)
     except UserNotFound as e:
         raise HTTPException(e.status_code, e.message)
