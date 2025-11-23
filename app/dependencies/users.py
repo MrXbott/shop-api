@@ -19,7 +19,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], user_s
         raise HTTPException(e.status_code, e.message)
     
     try:
-        user_id =  int(payload.get('sub'))
+        user_id =  int(payload.sub)
         user = await user_servise.get_user_by_id(user_id)
         return user
     except UserNotFound:
