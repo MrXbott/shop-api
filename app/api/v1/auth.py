@@ -5,7 +5,7 @@ from typing import Annotated
 from app.services.users import UserService
 from app.services.auth import AuthService
 from app.schemas.tokens import AccessToken, RefreshToken
-from app.schemas.users import UserFromDB, UserProfile, UserRegister, UserChangePassword
+from app.schemas.users import UserFromDB, UserProfile, UserRegister
 from app.exceptions.users import UserNotFound, UserUnauthorized, CreateUserException, UserEmailAlreadyExists
 from app.exceptions.tokens import TokenNotFound, InvalidToken, ExpiredToken, TokenException
 from app.exceptions.sessions import SessionIdNotFound, SessionException, SessionNotFound
@@ -112,20 +112,3 @@ async def logout(request: Request, response: Response, refresh_token: str = Cook
 
     return {'detail': 'Logged out successfully'}
 
-
-@router.post('/change_password')
-async def change_password(data: UserChangePassword, 
-                          current_user: Annotated[UserFromDB, Depends(get_current_user)],
-                          auth_service: Annotated[AuthService, Depends(get_auth_service)],
-                          ):
-    
-    if not verify_password(data.current_password, current_user.password_hash):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail='Wrong current password')
-
-    try:
-        await auth_service.change_password(current_user.id, data.new_password)
-        await auth_service.revoke_all_sessions_for_user(current_user.id)
-    except UserNotFound as e:
-        raise HTTPException(e.status_code, e.message)
-
-    return {'message': 'Password changed successfully'}

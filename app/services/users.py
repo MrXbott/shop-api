@@ -1,7 +1,7 @@
 from app.schemas.users import UserRegister, UserRegisterByAdmin, UserCreate, UserFromDB, UserUpdate, UserQueryParams
 from app.exceptions.users import UserNotFound, UserEmailAlreadyExists, UserNoUpdateData
 from app.repos.abstract.abstract_user_repo import AbstractUserRepository
-from app.utils.passwords import get_password_hash
+from app.utils.passwords import get_password_hash, verify_password
 
 
 class UserService:
@@ -46,6 +46,13 @@ class UserService:
     async def delete_user(self, user_id) -> bool:
         try:
             return await self.repo.delete(user_id)
+        except UserNotFound:
+            raise
+
+    async def change_password(self, user_id: int, new_password: str):
+        new_password_hash = get_password_hash(new_password)
+        try:
+            await self.repo.update_password(user_id, new_password_hash)
         except UserNotFound:
             raise
     

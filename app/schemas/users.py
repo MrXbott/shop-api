@@ -70,6 +70,7 @@ class UserUpdate(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
+
 class UserFromDB(UserBase):
     '''
     Model representing user data retrieved from the database and visible for admins only.
@@ -94,12 +95,14 @@ class UserQueryParams(BaseModel):
     role: Optional[str] = Field(default=None)
 
 
-class UserChangePassword(BaseModel):
+class ChangePasswordByUser(BaseModel):
     current_password: str
     new_password: str
 
+    model_config = ConfigDict(extra='forbid')
+
     @model_validator(mode='after')
-    def check_passwords_different(cls, values: 'UserChangePassword'):
+    def check_passwords_different(cls, values: 'ChangePasswordByUser'):
         if values.current_password == values.new_password:
             raise ValueError('The new password must not match the old one')
         return values
@@ -107,5 +110,11 @@ class UserChangePassword(BaseModel):
     @field_validator('new_password', mode='plain')
     def check_password(value: str) -> str:
         return validate_password(value)
+    
+
+class ChangePasswordByAdmin(BaseModel):
+    new_password: str
+
+    model_config = ConfigDict(extra='forbid')
 
 

@@ -173,10 +173,3 @@ class AuthService:
         # to do: make this in one transaction 
         await self.session_repo.revoke_session(session_id)
         await self.token_repo.mark_as_used(session_id)
-
-    async def change_password(self, user_id: int, new_password: str):
-        new_password_hash = get_password_hash(new_password)
-        try:
-            await self.user_service.repo.update_password(user_id, new_password_hash)
-        except UserNotFound:
-            raise
