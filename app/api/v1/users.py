@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from app.schemas.users import (UserRegisterByAdmin, 
                                UserFromDB, 
                                UserUpdate, 
+                               UserUpdateByAdmin,
                                ChangePasswordByUser, 
                                ChangePasswordByAdmin, 
                                UserQueryParams, 
@@ -77,7 +78,7 @@ async def get_user_profile_by_id(user_id: int, user_service: UserService = Depen
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(e))
 
 @router.patch('/{user_id}', response_model=UserFromDB, status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
-async def update_user_profile_by_id(user_id: int, user_data: UserUpdate, user_service: UserService = Depends(get_user_service)):
+async def update_user_profile_by_id(user_id: int, user_data: UserUpdateByAdmin, user_service: UserService = Depends(get_user_service)):
     try:
         return await user_service.update_user(user_id, user_data)
     except (UserNotFound, UserNoUpdateData, UpdateUserException) as e:

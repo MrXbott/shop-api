@@ -70,6 +70,16 @@ class UserUpdate(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
+class UserUpdateByAdmin(BaseModel):
+    '''
+    Model for user data updates.
+    '''
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+
+    model_config = ConfigDict(extra='forbid')
+
 
 class UserFromDB(UserBase):
     '''
