@@ -33,7 +33,7 @@ async def register(user: UserRegister, service: UserService = Depends(get_user_s
         raise HTTPException(e.status_code, e.message)
     
 
-@router.post('/login', response_model=AccessToken)
+@router.post('/login', response_model=dict)
 async def login(request: Request, 
                 response: Response, 
                 form_data: Annotated[OAuth2PasswordRequestForm, Depends()],  
@@ -64,7 +64,17 @@ async def login(request: Request,
         path=f'{settings.api_prefix}/auth/token'  
     )
 
-    return AccessToken(access_token=access_token, token_type='bearer')
+    # return AccessToken(access_token=access_token, token_type='bearer')
+    return {'access_token': access_token,
+            'token_type': 'bearer',
+            'user': {
+                'id': user.id,
+                'role': user.role,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name
+            }
+        }
 
 
 @router.post('/token', response_model=AccessToken)
