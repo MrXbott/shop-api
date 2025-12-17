@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 
 from app.schemas.users import (UserRegisterByAdmin, 
                                UserFromDB, 
+                               UserFromDBView,
                                UserUpdate, 
                                UserUpdateByAdmin,
                                ChangePasswordByUser, 
@@ -55,14 +56,14 @@ async def change_own_password(data: ChangePasswordByUser,
 
 
 # ------ admin routes
-@router.post('/', response_model=UserFromDB, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_admin_user)])
+@router.post('/', response_model=UserFromDBView, status_code=status.HTTP_201_CREATED, dependencies=[Depends(get_admin_user)])
 async def create_user(user: UserRegisterByAdmin, user_service: UserService = Depends(get_user_service)):
     try:
         return await user_service.create_new_user(user)
     except (CreateUserException, UserNotFound, UserEmailAlreadyExists) as e:
         raise HTTPException(e.status_code, e.message)
 
-@router.get('/', response_model=list[UserFromDB], status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
+@router.get('/', response_model=list[UserFromDBView], status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
 async def get_users_by_params(params: UserQueryParams = Depends(), user_service: UserService = Depends(get_user_service)):
     return await user_service.get_users_by_params(params)
 
@@ -70,14 +71,14 @@ async def get_users_by_params(params: UserQueryParams = Depends(), user_service:
 async def get_users_count(user_service: UserService = Depends(get_user_service)):
     return {'users_count': await user_service.count_users()}
 
-@router.get('/{user_id}', response_model=UserFromDB, status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
+@router.get('/{user_id}', response_model=UserFromDBView, status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
 async def get_user_profile_by_id(user_id: int, user_service: UserService = Depends(get_user_service)):
     try:
         return await user_service.get_user_by_id(user_id)
     except UserNotFound as e:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(e))
 
-@router.patch('/{user_id}', response_model=UserFromDB, status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
+@router.patch('/{user_id}', response_model=UserFromDBView, status_code=status.HTTP_200_OK, dependencies=[Depends(get_admin_user)])
 async def update_user_profile_by_id(user_id: int, user_data: UserUpdateByAdmin, user_service: UserService = Depends(get_user_service)):
     try:
         return await user_service.update_user(user_id, user_data)

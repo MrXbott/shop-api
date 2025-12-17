@@ -85,6 +85,14 @@ class UserFromDB(UserBase):
     '''
     Model representing user data retrieved from the database and visible for admins only.
     '''
+    password_hash: str
+    id: int
+    role: Literal['admin', 'user']
+
+class UserFromDBView(UserBase):
+    '''
+    Model representing user data retrieved from the database and visible for admins only.
+    '''
     id: int
     role: Literal['admin', 'user']
 
