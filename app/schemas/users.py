@@ -1,11 +1,14 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator, field_validator
-from typing import Optional, Literal
+from typing import Optional, Literal, Annotated
 import re
 
 
 def validate_password(value: str) -> str:
     if len(value) < 8:
         raise ValueError('Password must be at least 8 characters')
+    
+    if len(value) > 128:
+        raise ValueError('The maximum password length is 128 characters')
 
     if not re.search(r'[A-Z]', value):
         raise ValueError('Password must contain at least one uppercase letter')
@@ -21,12 +24,17 @@ def validate_password(value: str) -> str:
 
     return value
 
+NameString = Annotated[
+    str, 
+    Field(min_length=2, max_length=50, pattern=r'^[a-zA-Zа-яА-Я]+(?:-[a-zA-Zа-яА-Я]+)*$')
+]
+
 class UserBase(BaseModel):
     '''
     Base model for user data containing common fields.
     '''
-    first_name: str
-    last_name: str
+    first_name: NameString
+    last_name: NameString
     email: EmailStr
 
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
@@ -42,6 +50,13 @@ class UserRegister(UserBase):
         if 'role' in values:
             raise ValueError('You can\'t set role manually')
         return values
+    
+    @field_validator('email', mode='before')
+    @classmethod
+    def email_to_lower(cls, v: str):
+        if isinstance(v, str):
+            return v.lower()
+        return v
     
     @field_validator('password', mode='plain')
     def check_password(value: str) -> str:
