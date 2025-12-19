@@ -33,7 +33,8 @@ class UserRepoPostgres(AbstractUserRepository):
         return UserFromDB.model_validate(user)
 
     async def get_by_email(self, email: str) -> UserFromDB: 
-        result = await self.session.execute(select(UserModel).where(UserModel.email == email))
+        # result = await self.session.execute(select(UserModel).where(UserModel.email == email))
+        result = await self.session.execute(select(UserModel).where(func.lower(UserModel.email) == email.lower()))
         user = result.scalar_one_or_none()
         if not user:
             raise UserNotFound()
