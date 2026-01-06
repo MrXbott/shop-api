@@ -96,13 +96,19 @@ class UserUpdateByAdmin(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
 
-class UserFromDB(UserBase):
+class UserFromDB(BaseModel):
     '''
     Model representing user data retrieved from the database and visible for admins only.
     '''
+    first_name: str
+    last_name: str
+    email: EmailStr
     password_hash: str
     id: int
     role: Literal['admin', 'user']
+
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+
 
 class UserFromDBView(UserBase):
     '''
