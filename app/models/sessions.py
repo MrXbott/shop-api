@@ -11,7 +11,7 @@ class SessionModel(Base):
     __tablename__ = 'sessions'
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: uuid4().hex)
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete="CASCADE"))
     user_agent: Mapped[str] = mapped_column(String, nullable=True)
     ip_address: Mapped[str] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)

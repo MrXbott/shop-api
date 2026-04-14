@@ -10,7 +10,7 @@ class RefreshTokenModel(Base):
     __tablename__ = 'refresh_tokens'
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: uuid4().hex) 
-    session_id: Mapped[str] = mapped_column(ForeignKey('sessions.id'))
+    session_id: Mapped[str] = mapped_column(ForeignKey('sessions.id', ondelete="CASCADE"))
     expires_at: Mapped[datetime]
     is_used: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
