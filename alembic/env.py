@@ -22,7 +22,6 @@ from app.models.sessions import SessionModel
 print("=== REGISTERED TABLES ===")
 print(Base.metadata.tables.keys())
 
-# from app.env_config import POSTGRES_URL
 from app.env_config import settings 
 
 # Interpret the config file for Python logging.
@@ -73,7 +72,7 @@ async def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    connectable = create_async_engine(settings.postgres_url, poolclass=pool.NullPool)
+    connectable = create_async_engine(settings.database_url, poolclass=pool.NullPool)
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
