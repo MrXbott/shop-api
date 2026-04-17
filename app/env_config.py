@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     session_lifetime_days: int = Field(..., ge=0) 
     api_prefix: str
     db_engine: str
-    postgres_url: str
-    postgres_url_test: str
+    database_url: str
+    database_url_test: str
 
     model_config = SettingsConfigDict(
         env_file='.env', 

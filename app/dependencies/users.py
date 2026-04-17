@@ -10,7 +10,7 @@ from app.exceptions.tokens import InvalidToken, ExpiredToken
 from app.dependencies.services import get_user_service, get_auth_service
 from app.env_config import settings
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f'{settings.api_prefix}/auth/token')
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f'{settings.api_prefix}/auth/login')
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], user_servise: UserService = Depends(get_user_service), auth_service: AuthService = Depends(get_auth_service)) -> UserFromDB:
     try:
@@ -20,7 +20,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], user_s
     
     try:
         user_id =  int(payload.sub)
-        user = await user_servise.get_user_by_id(user_id)
+        user = await user_servise.get_user_by_id(user_id, with_roles=True)
         return user
     except UserNotFound:
         raise
@@ -28,7 +28,9 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], user_s
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Invalid or expired token')
     
 
-async def get_admin_user(user: UserFromDB = Depends(get_current_user)) -> UserFromDB:
-    if user.role != 'admin':
-        raise HTTPException(status.HTTP_403_FORBIDDEN, 'Admin access only')
-    return user
+# async def get_admin_user(user: UserFromDB = Depends(get_current_user)) -> UserFromDB:
+#     user_roles = [role.name for role in user.roles]
+
+#     if not 'admin' in user_roles:
+#         raise HTTPException(status.HTTP_403_FORBIDDEN, 'Admin access only')
+#     return user

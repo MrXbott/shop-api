@@ -69,7 +69,7 @@ class AuthService:
     def decode_token(self, token: str) -> TokenPayload:
         try:
             payload = decode(token, self.secret_key, algorithms=[self.algorithm])
-        except ExpiredSignatureError:
+        except ExpiredSignatureError as e:
             raise ExpiredToken()
         except InvalidTokenError:
             raise InvalidToken()

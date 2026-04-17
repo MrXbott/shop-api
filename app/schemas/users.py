@@ -2,6 +2,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator, fi
 from typing import Optional, Literal, Annotated
 import re
 
+from app.schemas.roles import RoleFromDB
 
 def validate_password(value: str) -> str:
     if len(value) < 8:
@@ -26,7 +27,7 @@ def validate_password(value: str) -> str:
 
 NameString = Annotated[
     str, 
-    Field(min_length=2, max_length=50, pattern=r'^[a-zA-Zа-яА-Я]+(?:-[a-zA-Zа-яА-Я]+)*$')
+    Field(min_length=2, max_length=50, pattern=r'^[a-zA-Z]+(?:-[a-zA-Z]+)*$')
 ]
 
 class UserBase(BaseModel):
@@ -67,14 +68,21 @@ class UserRegisterByAdmin(UserBase):
     Model for user registration data submitted by an admin.
     '''
     password: str
-    role: Literal['admin', 'user'] = Field(default='user')
+    # role: Literal['admin', 'user'] = Field(default='user')
+    roles: Optional[list[str]] = None
+
+class UserLogin(BaseModel):
+    username: EmailStr
+    password: str
+    
 
 class UserCreate(UserBase):
     '''
     Model for storing new user data in the database.
     '''
     password_hash: str
-    role: Literal['admin', 'user'] = Field(default='user')
+    # role: Literal['admin', 'user'] = Field(default='user')
+    # roles: list = Field(default=['customer'])
 
 class UserUpdate(BaseModel):
     '''
@@ -105,7 +113,8 @@ class UserFromDB(BaseModel):
     email: EmailStr
     password_hash: str
     id: int
-    role: Literal['admin', 'user']
+    # role: Literal['admin', 'user']
+    roles: Optional[list[RoleFromDB]]
 
     model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
@@ -115,13 +124,15 @@ class UserFromDBView(UserBase):
     Model representing user data retrieved from the database and visible for admins only.
     '''
     id: int
-    role: Literal['admin', 'user']
+    # role: Literal['admin', 'user']
+    roles: Optional[list[RoleFromDB]]
 
 class UserProfile(UserBase):
     '''
     Model representing user data retrieved from the database and visible for users.
     '''
-    role: Literal['admin', 'user']
+    # role: Literal['admin', 'user']
+    roles: list[RoleFromDB]
 
 class UserQueryParams(BaseModel):
     '''

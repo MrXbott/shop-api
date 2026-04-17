@@ -1,17 +1,17 @@
 from fastapi import APIRouter, HTTPException, Depends, status, Request, Response, Cookie
-from fastapi.security import OAuth2PasswordRequestForm
-from typing import Annotated
+# from fastapi.security import OAuth2PasswordRequestForm
+# from typing import Annotated
 
 from app.services.users import UserService
 from app.services.auth import AuthService
 from app.schemas.tokens import AccessToken, RefreshToken
-from app.schemas.users import UserFromDB, UserProfile, UserRegister
+from app.schemas.users import UserFromDB, UserProfile, UserRegister, UserLogin
 from app.exceptions.users import UserNotFound, UserUnauthorized, CreateUserException, UserEmailAlreadyExists
 from app.exceptions.tokens import TokenNotFound, InvalidToken, ExpiredToken, TokenException
 from app.exceptions.sessions import SessionIdNotFound, SessionException, SessionNotFound
 from app.dependencies.services import get_auth_service, get_user_service
 from app.dependencies.users import get_current_user
-from app.utils.passwords import verify_password
+# from app.utils.passwords import verify_password
 
 from app.env_config import settings
 
@@ -36,11 +36,11 @@ async def register(user: UserRegister, service: UserService = Depends(get_user_s
 @router.post('/login', response_model=dict)
 async def login(request: Request, 
                 response: Response, 
-                form_data: Annotated[OAuth2PasswordRequestForm, Depends()],  
+                login_data: UserLogin,
                 auth_service: AuthService = Depends(get_auth_service)
-                ) -> AccessToken:
+                ) -> dict:
     try:
-        user = await auth_service.authenticate_user(form_data.username, form_data.password)
+        user = await auth_service.authenticate_user(login_data.username, login_data.password)
     except (UserNotFound, UserUnauthorized) as e:
         raise HTTPException(e.status_code, e.message)
     
@@ -69,7 +69,7 @@ async def login(request: Request,
             'token_type': 'bearer',
             'user': {
                 'id': user.id,
-                'role': user.role,
+                'roles': [role.name for role in user.roles],
                 'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name

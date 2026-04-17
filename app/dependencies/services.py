@@ -5,6 +5,7 @@ from fastapi import Depends
 from app.db.postgres.db_postgres import get_session
 
 from app.repos.postgres.users import UserRepoPostgres
+from app.repos.postgres.roles import RoleRepoPostgres
 from app.repos.postgres.tokens import RefreshTokenRepoPostgres
 from app.repos.postgres.sessions import SessionRepoPostgres
 from app.repos.postgres.products import ProductRepoPostgres
@@ -25,6 +26,7 @@ REPO_MAP = {
         'refresh_token_repo': RefreshTokenRepoPostgres,
         'session_repo': SessionRepoPostgres,
         'user': UserRepoPostgres,
+        'role': RoleRepoPostgres,
         'product': ProductRepoPostgres,
         'category': CategoryRepoPostgres,
         'order': OrderRepoPostgres
@@ -40,13 +42,14 @@ def make_repository_factory(repo_name: str):
 get_token_repo = make_repository_factory('refresh_token_repo')
 get_session_repo = make_repository_factory('session_repo')
 get_user_repo = make_repository_factory('user')
+get_role_repo = make_repository_factory('role')
 get_product_repo = make_repository_factory('product')
 get_category_repo = make_repository_factory('category')
 get_order_repo = make_repository_factory('order')
 
 
-def get_user_service(repo = Depends(get_user_repo)) -> UserService:
-    return UserService(repo)
+def get_user_service(user_repo = Depends(get_user_repo), role_repo = Depends(get_role_repo)) -> UserService:
+    return UserService(user_repo, role_repo)
 
 def get_auth_service(session_repo = Depends(get_session_repo), token_repo = Depends(get_token_repo), user_service = Depends(get_user_service)) -> AuthService:
     return AuthService(token_repo=token_repo,

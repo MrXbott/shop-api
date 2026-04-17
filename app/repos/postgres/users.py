@@ -1,9 +1,11 @@
 from sqlalchemy import delete, select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 
 from app.repos.abstract.abstract_user_repo import AbstractUserRepository
 from app.models.users import UserModel
+from app.models.roles import RoleModel
 from app.schemas.users import UserFromDB, UserCreate, UserUpdate
 
 from app.exceptions.users import UserEmailAlreadyExists, UserNotFound, UserNoUpdateData
@@ -31,10 +33,26 @@ class UserRepoPostgres(AbstractUserRepository):
         if not user:
             raise UserNotFound()
         return UserFromDB.model_validate(user)
+    
+    async def get_by_id_with_roles(self, user_id: int) -> UserFromDB:
+        result = await self.session.execute(
+            select(UserModel)
+            .where(UserModel.id == user_id)
+            .options(
+                selectinload(UserModel.roles)
+                .selectinload(RoleModel.permissions)
+                )
+            )
+        user = result.scalar_one_or_none()
+        if not user:
+            raise UserNotFound()
+        return UserFromDB.model_validate(user)
 
     async def get_by_email(self, email: str) -> UserFromDB: 
-        # result = await self.session.execute(select(UserModel).where(UserModel.email == email))
-        result = await self.session.execute(select(UserModel).where(func.lower(UserModel.email) == email.lower()))
+        result = await self.session.execute(
+            select(UserModel)
+            .where(func.lower(UserModel.email) == email.lower())
+            )
         user = result.scalar_one_or_none()
         if not user:
             raise UserNotFound()

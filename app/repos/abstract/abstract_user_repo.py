@@ -14,6 +14,10 @@ class AbstractUserRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_by_id_with_roles(self, user_id: int) -> UserFromDB:
+        pass
+
+    @abstractmethod
     async def get_by_email(self, email: str) -> UserFromDB: 
         pass
 
