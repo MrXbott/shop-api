@@ -281,7 +281,6 @@ def init_users(roles: dict[RoleModel]):
                 'last_name': 'James',
                 'email': 'mary@example.com',
                 'password_hash': '$2b$12$bxWjs7dZ9nxxRn9PRX3uGekeKGgSGywjYzJUtd2sqo7kDhy6MQFke',
-                'role': 'admin',
                 'roles': [
                     roles['admin']
                 ]
@@ -291,7 +290,6 @@ def init_users(roles: dict[RoleModel]):
                 'last_name': 'Brown',
                 'email': 'bob@example.com',
                 'password_hash': '$2b$12$3rbtxnX6zB/ezEHdiURL2.Igu1xVLg/4xT4nK8ioHOfl7nfDP7VK2',
-                'role': 'admin',
                 'roles': [
                     roles['admin']
                 ]
@@ -301,7 +299,6 @@ def init_users(roles: dict[RoleModel]):
                 'last_name': 'Doe',
                 'email': 'john@example.com',
                 'password_hash': '$2b$12$SK7Vw9tyO6HKkF2J3k8x1uVL3cYk4qygRHyuKphUmAz.GhcWP7oVe',
-                'role': 'user',
                 'roles': [
                     roles['customer']
                 ]
@@ -311,7 +308,6 @@ def init_users(roles: dict[RoleModel]):
                 'last_name': 'Smith',
                 'email': 'ann@example.com',
                 'password_hash': '$2b$12$z.8jSC2R0GjYVWkJmp9WbONJJruW.hHFPuRibyMbIcuBkSG3y8yO.',
-                'role': 'user',
                 'roles': [
                     roles['analyst'],
                     roles['manager'],
