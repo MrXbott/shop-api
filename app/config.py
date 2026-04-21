@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     api_prefix: str
     db_engine: str
     database_url: str
-    database_url_test: str
 
     model_config = SettingsConfigDict(
         env_file='.env', 
