@@ -13,7 +13,7 @@ from app.dependencies.services import get_auth_service, get_user_service
 from app.dependencies.users import get_current_user
 # from app.utils.passwords import verify_password
 
-from app.env_config import settings
+from app.config import settings
 
 router = APIRouter(prefix='/auth')
 

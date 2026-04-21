@@ -18,7 +18,7 @@ from app.services.products import ProductService
 from app.services.categories import CategoryService
 from app.services.orders import OrderService
 
-from app.env_config import settings
+from app.config import settings
 
 
 REPO_MAP = {

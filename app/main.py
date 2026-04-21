@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from app.api.v1 import auth, users, products, orders, categories
 from app.exceptions.handlers import register_exception_handlers
 from app.middleware.logging import LoggingMiddleware
-from app.env_config import settings
+from app.config import settings
 
 
 @asynccontextmanager

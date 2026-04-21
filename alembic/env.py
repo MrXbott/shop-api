@@ -23,7 +23,7 @@ from app.models.roles import RoleModel, PermissionModel, RolePermissionModel, Us
 print("=== REGISTERED TABLES ===")
 print(Base.metadata.tables.keys())
 
-from app.env_config import settings 
+from app.config import settings 
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

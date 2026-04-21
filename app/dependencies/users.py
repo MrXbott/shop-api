@@ -8,7 +8,7 @@ from app.services.auth import AuthService
 from app.exceptions.users import UserNotFound
 from app.exceptions.tokens import InvalidToken, ExpiredToken
 from app.dependencies.services import get_user_service, get_auth_service
-from app.env_config import settings
+from app.config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f'{settings.api_prefix}/auth/login')
 

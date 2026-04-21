@@ -5,7 +5,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.env_config import settings
+from app.config import settings
 from app.models.roles import RoleModel, PermissionModel
 from app.models.categories import CategoryModel
 from app.models.products import ProductModel
